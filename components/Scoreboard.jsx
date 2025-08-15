@@ -38,22 +38,29 @@ export default function Scoreboard() {
   }
 
   async function fetchMatches() {
-  try {
-    const res = await fetch('/api/matches')
-    if (!res.ok) throw new Error('Failed to fetch matches')
-    let data = await res.json()
+    try {
+      const res = await fetch('/api/matches')
+      if (!res.ok) throw new Error('Failed to fetch matches')
+      let data = await res.json()
 
-    if (!Array.isArray(data)) throw new Error('Matches data is not an array')
+      console.log('Raw matches data:', data)
 
-    // Ensure newest matches show first in UI
-    data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      if (!Array.isArray(data)) {
+        console.error('Matches data is not an array:', typeof data, data)
+        setMatches([])
+        return
+      }
 
-    setMatches(data)
-  } catch (err) {
-    console.error('Failed to fetch matches:', err)
-    setMatches([])
+      // Ensure newest matches show first in UI
+      data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      
+      console.log('Processed matches data:', data)
+      setMatches(data)
+    } catch (err) {
+      console.error('Failed to fetch matches:', err)
+      setMatches([])
+    }
   }
-}
 
 
   // Add a new player
