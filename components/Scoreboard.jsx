@@ -16,6 +16,7 @@ export default function Scoreboard() {
 
   // Fetch players and matches on mount
   useEffect(() => {
+    console.log('Component mounted, fetching data...')
     fetchPlayers()
     fetchMatches()
   }, [])
@@ -55,6 +56,7 @@ export default function Scoreboard() {
       data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       
       console.log('Processed matches data:', data)
+      console.log('Setting matches state to:', data)
       setMatches(data)
     } catch (err) {
       console.error('Failed to fetch matches:', err)
@@ -258,6 +260,15 @@ export default function Scoreboard() {
       </table>
 
       <h2>Recent Matches</h2>
+      
+      {/* Debug info */}
+      <div style={{ marginBottom: 10, padding: 10, backgroundColor: '#f0f0f0', fontSize: '12px' }}>
+        <strong>Debug Info:</strong><br/>
+        Matches state type: {typeof matches}<br/>
+        Matches state length: {Array.isArray(matches) ? matches.length : 'Not an array'}<br/>
+        Matches state value: {JSON.stringify(matches, null, 2)}
+      </div>
+      
       <table border="1" cellPadding="8" style={{ width: '100%', textAlign: 'left' }}>
         <thead>
           <tr>
