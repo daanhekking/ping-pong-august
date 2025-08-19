@@ -261,14 +261,6 @@ export default function Scoreboard() {
 
       <h2>Recent Matches</h2>
       
-      {/* Debug info */}
-      <div style={{ marginBottom: 10, padding: 10, backgroundColor: '#f0f0f0', fontSize: '12px' }}>
-        <strong>Debug Info:</strong><br/>
-        Matches state type: {typeof matches}<br/>
-        Matches state length: {Array.isArray(matches) ? matches.length : 'Not an array'}<br/>
-        Matches state value: {JSON.stringify(matches, null, 2)}
-      </div>
-      
       <table border="1" cellPadding="8" style={{ width: '100%', textAlign: 'left' }}>
         <thead>
           <tr>
@@ -277,6 +269,7 @@ export default function Scoreboard() {
             <th>Player 2</th>
             <th>Score</th>
             <th>Winner</th>
+            <th>Created</th>
             <th>ELO Change</th>
           </tr>
         </thead>
@@ -292,6 +285,7 @@ export default function Scoreboard() {
                 <td>{player2 ? player2.name : 'Unknown'}</td>
                 <td>{m.player2_score}</td>
                 <td>{winner ? winner.name : 'Draw'}</td>
+                <td>{m.created_at ? new Date(m.created_at).toLocaleString() : '-'}</td>
                 <td>
                   {m.player1_elo_change > 0 && '+'}
                   {m.player1_elo_change} / {m.player2_elo_change > 0 && '+'}
