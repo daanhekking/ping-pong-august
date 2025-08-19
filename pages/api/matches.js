@@ -3,18 +3,33 @@ import { supabase } from '../../lib/supabaseClient';
 export default async function handler(req, res) {
   if (req.method === 'GET') {
     console.log('GET /api/matches called')
-    const { data, error } = await supabase
-      .from('matches')
-      .select('*')
-      .order('created_at', { ascending: false }); // Always newest first
-
-    if (error) {
-      console.error('Supabase error in GET /api/matches:', error)
-      return res.status(500).json({ error: error.message });
-    }
     
-    console.log('GET /api/matches returning data:', data)
-    return res.status(200).json(data);
+    try {
+      // Test Supabase connection first
+      console.log('Testing Supabase connection...')
+      
+      // First, let's try to get all matches without ordering to see if the table exists
+      console.log('Attempting to fetch matches...')
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+
+      if (error) {
+        console.error('Supabase error in GET /api/matches:', error)
+        console.error('Error details:', JSON.stringify(error, null, 2))
+        return res.status(500).json({ 
+          error: error.message, 
+          details: error,
+          hint: 'Check if matches table exists and has correct structure'
+        });
+      }
+      
+      console.log('GET /api/matches returning data:', data)
+      return res.status(200).json(data);
+    } catch (err) {
+      console.error('Unexpected error in GET /api/matches:', err)
+      return res.status(500).json({ error: 'Unexpected error', details: err.message });
+    }
   }
 
   if (req.method === 'POST') {
