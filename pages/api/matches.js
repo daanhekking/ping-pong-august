@@ -8,11 +8,12 @@ export default async function handler(req, res) {
       // Test Supabase connection first
       console.log('Testing Supabase connection...')
       
-      // First, let's try to get all matches without ordering to see if the table exists
-      console.log('Attempting to fetch matches...')
+      // Fetch matches ordered by played_at (new column)
+      console.log('Attempting to fetch matches ordered by played_at...')
       const { data, error } = await supabase
         .from('matches')
         .select('*')
+        .order('played_at', { ascending: false })
 
       if (error) {
         console.error('Supabase error in GET /api/matches:', error)
@@ -42,7 +43,8 @@ export default async function handler(req, res) {
       player2_score,
       winner_id,
       player1_elo_change,
-      player2_elo_change
+      player2_elo_change,
+      played_at
     } = req.body;
 
     // Validate required fields
@@ -50,6 +52,8 @@ export default async function handler(req, res) {
       console.error('Missing required fields in POST /api/matches')
       return res.status(400).json({ error: 'Missing required fields' });
     }
+
+    const playedAtValue = played_at ?? new Date().toISOString()
 
     const { data, error } = await supabase
       .from('matches')
@@ -60,7 +64,8 @@ export default async function handler(req, res) {
         player2_score,
         winner_id,
         player1_elo_change,
-        player2_elo_change
+        player2_elo_change,
+        played_at: playedAtValue
       }])
       .select('*'); // Return inserted match
 

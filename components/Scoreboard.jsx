@@ -52,8 +52,8 @@ export default function Scoreboard() {
         return
       }
 
-      // Ensure newest matches show first in UI
-      data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+      // Ensure newest matches show first in UI (prefer played_at, fallback created_at)
+      data.sort((a, b) => new Date(b.played_at || b.created_at) - new Date(a.played_at || a.created_at))
       
       console.log('Processed matches data:', data)
       console.log('Setting matches state to:', data)
@@ -136,6 +136,7 @@ export default function Scoreboard() {
           winner_id: winnerId,
           player1_elo_change: player1EloChange,
           player2_elo_change: player2EloChange,
+          played_at: new Date().toISOString(),
         }),
       })
       if (!res.ok) throw new Error('Failed to add match')
@@ -269,8 +270,8 @@ export default function Scoreboard() {
             <th>Player 2</th>
             <th>Score</th>
             <th>Winner</th>
-            <th>Created</th>
             <th>ELO Change</th>
+            <th>Played</th>
           </tr>
         </thead>
         <tbody>
@@ -285,12 +286,18 @@ export default function Scoreboard() {
                 <td>{player2 ? player2.name : 'Unknown'}</td>
                 <td>{m.player2_score}</td>
                 <td>{winner ? winner.name : 'Draw'}</td>
-                <td>{m.created_at ? new Date(m.created_at).toLocaleString() : '-'}</td>
                 <td>
                   {m.player1_elo_change > 0 && '+'}
                   {m.player1_elo_change} / {m.player2_elo_change > 0 && '+'}
                   {m.player2_elo_change}
                 </td>
+                <td>{(m.played_at || m.created_at) 
+                  ? new Date(m.played_at || m.created_at).toLocaleString('nb-NO', { 
+                      timeZone: 'Europe/Oslo', 
+                      year: 'numeric', month: '2-digit', day: '2-digit', 
+                      hour: '2-digit', minute: '2-digit' 
+                    }) 
+                  : '-'}</td>
               </tr>
             )
           })}
