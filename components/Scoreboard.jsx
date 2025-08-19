@@ -14,6 +14,9 @@ export default function Scoreboard() {
   const [player2Score, setPlayer2Score] = useState(0)
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Toast notification state
+  const [toasts, setToasts] = useState([])
+
   // Fetch players and matches on mount
   useEffect(() => {
     console.log('Component mounted, fetching data...')
@@ -84,9 +87,25 @@ export default function Scoreboard() {
       setNewPlayerName('')
       if (!player1Id) setPlayer1Id(addedPlayer.id)
       else if (!player2Id) setPlayer2Id(addedPlayer.id)
+      
+      // Show success toast
+      addToast(`Player "${addedPlayer.name}" added successfully!`, 'success')
     } catch (err) {
       setErrorMsg(err.message)
+      addToast(`Failed to add player: ${err.message}`, 'error')
     }
+  }
+
+  // Toast notification functions
+  function addToast(message, type = 'success') {
+    const id = Date.now()
+    const newToast = { id, message, type }
+    setToasts(prev => [...prev, newToast])
+    
+    // Auto-remove toast after 4 seconds
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast.id !== id))
+    }, 4000)
   }
 
   // Calculate ELO change (basic example)
@@ -168,17 +187,22 @@ export default function Scoreboard() {
 
       setPlayer1Score(0)
       setPlayer2Score(0)
+      
+      // Show success toast
+      const winner = players.find(p => p.id === winnerId)
+      addToast(`Match recorded! ${winner ? winner.name : 'Unknown'} won!`, 'success')
     } catch (err) {
       setErrorMsg(err.message)
+      addToast(`Failed to record match: ${err.message}`, 'error')
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
-      <div className="max-w-4xl mx-auto space-y-8">
+      <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ping Pong Leaderboard</h1>
-          <p className="text-gray-600">Track your matches and climb the rankings</p>
+          <h1 className="text-5xl font-bold text-gray-900 mb-3">Ping Pong Leaderboard</h1>
+          <p className="text-lg text-gray-600">Track your matches and climb the rankings</p>
         </div>
 
         {/* Add Player Form */}
@@ -375,6 +399,24 @@ export default function Scoreboard() {
             </table>
           </div>
         </div>
+      </div>
+      
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2">
+        {toasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 ${
+              toast.type === 'success' 
+                ? 'bg-green-500' 
+                : toast.type === 'error' 
+                ? 'bg-red-500' 
+                : 'bg-blue-500'
+            }`}
+          >
+            {toast.message}
+          </div>
+        ))}
       </div>
     </div>
   )

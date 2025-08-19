@@ -10,10 +10,7 @@ export default function Home() {
         <title>Ping Pong Scoreboard</title>
         <meta name="description" content="Scoreboard app converted to Next.js" />
       </Head>
-      <main className="container">
-        <h1>Ping Pong — Scoreboard</h1>
-        <Scoreboard />
-      </main>
+      <Scoreboard />
     </>
   )
 }
