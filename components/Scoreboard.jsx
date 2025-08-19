@@ -64,7 +64,6 @@ export default function Scoreboard() {
     }
   }
 
-
   // Add a new player
   async function addPlayer(e) {
     e.preventDefault()
@@ -175,134 +174,208 @@ export default function Scoreboard() {
   }
 
   return (
-    <div style={{ maxWidth: 700, margin: 'auto', padding: 20 }}>
-      <h1>Ping Pong Leaderboard</h1>
-
-      <form onSubmit={addPlayer} style={{ marginBottom: 20 }}>
-        <input
-          type="text"
-          placeholder="New player name"
-          value={newPlayerName}
-          onChange={(e) => setNewPlayerName(e.target.value)}
-          required
-        />
-        <button type="submit">Add Player</button>
-      </form>
-
-      <form onSubmit={addMatch} style={{ marginBottom: 20 }}>
-        <div>
-          <label>
-            Player 1:
-            <select value={player1Id} onChange={(e) => setPlayer1Id(e.target.value)}>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (ELO: {p.elo_rating})
-                </option>
-              ))}
-            </select>
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={player1Score}
-            onChange={(e) => setPlayer1Score(Number(e.target.value))}
-          />
+    <div className="min-h-screen bg-gray-50 py-8 px-4">
+      <div className="max-w-4xl mx-auto space-y-8">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Ping Pong Leaderboard</h1>
+          <p className="text-gray-600">Track your matches and climb the rankings</p>
         </div>
 
-        <div>
-          <label>
-            Player 2:
-            <select value={player2Id} onChange={(e) => setPlayer2Id(e.target.value)}>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} (ELO: {p.elo_rating})
-                </option>
-              ))}
-            </select>
-          </label>
-          <input
-            type="number"
-            min="0"
-            value={player2Score}
-            onChange={(e) => setPlayer2Score(Number(e.target.value))}
-          />
+        {/* Add Player Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Add New Player</h2>
+          <form onSubmit={addPlayer} className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Enter player name"
+              value={newPlayerName}
+              onChange={(e) => setNewPlayerName(e.target.value)}
+              required
+              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+            <button 
+              type="submit"
+              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Add Player
+            </button>
+          </form>
         </div>
 
-        <button type="submit">Add Match</button>
-      </form>
+        {/* Add Match Form */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Match</h2>
+          <form onSubmit={addMatch} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Player 1
+                </label>
+                <select 
+                  value={player1Id} 
+                  onChange={(e) => setPlayer1Id(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (ELO: {p.elo_rating})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Score"
+                  value={player1Score}
+                  onChange={(e) => setPlayer1Score(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
 
-      {errorMsg && <p style={{ color: 'red' }}>{errorMsg}</p>}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Player 2
+                </label>
+                <select 
+                  value={player2Id} 
+                  onChange={(e) => setPlayer2Id(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  {players.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name} (ELO: {p.elo_rating})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  min="0"
+                  placeholder="Score"
+                  value={player2Score}
+                  onChange={(e) => setPlayer2Score(Number(e.target.value))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
+            
+            <button 
+              type="submit"
+              className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Record Match
+            </button>
+          </form>
+        </div>
 
-      <h2>Leaderboard</h2>
-      <table border="1" cellPadding="8" style={{ width: '100%', textAlign: 'left' }}>
-        <thead>
-          <tr>
-            <th>Player</th>
-            <th>ELO</th>
-            <th>Played</th>
-            <th>Won</th>
-            <th>Lost</th>
-          </tr>
-        </thead>
-        <tbody>
-          {players
-            .slice()
-            .sort((a, b) => b.elo_rating - a.elo_rating)
-            .map((p) => (
-              <tr key={p.id}>
-                <td>{p.name}</td>
-                <td>{p.elo_rating}</td>
-                <td>{p.matches_played}</td>
-                <td>{p.matches_won}</td>
-                <td>{p.matches_lost}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+        {errorMsg && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p className="text-red-800">{errorMsg}</p>
+          </div>
+        )}
 
-      <h2>Recent Matches</h2>
-      
-      <table border="1" cellPadding="8" style={{ width: '100%', textAlign: 'left' }}>
-        <thead>
-          <tr>
-            <th>Player 1</th>
-            <th>Score</th>
-            <th>Player 2</th>
-            <th>Score</th>
-            <th>Winner</th>
-            <th>ELO Change</th>
-            <th>Played</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(Array.isArray(matches) ? matches : []).map((m) => {
-            const player1 = players.find((p) => p.id === m.player1_id)
-            const player2 = players.find((p) => p.id === m.player2_id)
-            const winner = players.find((p) => p.id === m.winner_id)
-            return (
-              <tr key={m.id}>
-                <td>{player1 ? player1.name : 'Unknown'}</td>
-                <td>{m.player1_score}</td>
-                <td>{player2 ? player2.name : 'Unknown'}</td>
-                <td>{m.player2_score}</td>
-                <td>{winner ? winner.name : 'Draw'}</td>
-                <td>
-                  {m.player1_elo_change > 0 && '+'}
-                  {m.player1_elo_change} / {m.player2_elo_change > 0 && '+'}
-                  {m.player2_elo_change}
-                </td>
-                <td>{(m.played_at || m.created_at) 
-                  ? new Date(m.played_at || m.created_at).toLocaleString('nb-NO', { 
-                      timeZone: 'Europe/Oslo', 
-                      year: 'numeric', month: '2-digit', day: '2-digit', 
-                      hour: '2-digit', minute: '2-digit' 
-                    }) 
-                  : '-'}</td>
-              </tr>
-            )
-          })}
-        </tbody>
-      </table>
+        {/* Leaderboard */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Leaderboard</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Player</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">ELO</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Played</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Won</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Lost</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {players
+                  .slice()
+                  .sort((a, b) => b.elo_rating - a.elo_rating)
+                  .map((p, index) => (
+                    <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${index === 0 ? 'bg-yellow-50' : ''}`}>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-3">
+                          {index === 0 && <span className="text-yellow-600 text-lg">🥇</span>}
+                          {index === 1 && <span className="text-gray-400 text-lg">🥈</span>}
+                          {index === 2 && <span className="text-amber-600 text-lg">🥉</span>}
+                          <span className={`font-medium ${index === 0 ? 'text-yellow-700' : 'text-gray-900'}`}>
+                            {p.name}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-mono font-semibold text-gray-900">{p.elo_rating}</td>
+                      <td className="py-3 px-4 text-gray-600">{p.matches_played}</td>
+                      <td className="py-3 px-4 text-green-600 font-medium">{p.matches_won}</td>
+                      <td className="py-3 px-4 text-red-600 font-medium">{p.matches_lost}</td>
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* Recent Matches */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Matches</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-gray-200">
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Player 1</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Score</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Player 2</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Score</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Winner</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">Played</th>
+                  <th className="text-left py-3 px-4 font-medium text-gray-700">ELO Change</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {(Array.isArray(matches) ? matches : []).map((m) => {
+                  const player1 = players.find((p) => p.id === m.player1_id)
+                  const player2 = players.find((p) => p.id === m.player2_id)
+                  const winner = players.find((p) => p.id === m.winner_id)
+                  return (
+                    <tr key={m.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="py-3 px-4 font-medium text-gray-900">{player1 ? player1.name : 'Unknown'}</td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{m.player1_score}</td>
+                      <td className="py-3 px-4 font-medium text-gray-900">{player2 ? player2.name : 'Unknown'}</td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{m.player2_score}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          winner ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {winner ? winner.name : 'Draw'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-sm text-gray-600">
+                        {(m.played_at || m.created_at) 
+                          ? new Date(m.played_at || m.created_at).toLocaleString('nb-NO', { 
+                              timeZone: 'Europe/Oslo', 
+                              year: 'numeric', month: '2-digit', day: '2-digit', 
+                              hour: '2-digit', minute: '2-digit' 
+                            }) 
+                          : '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="text-sm">
+                          <span className={`font-mono ${m.player1_elo_change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {m.player1_elo_change > 0 && '+'}{m.player1_elo_change}
+                          </span>
+                          <span className="text-gray-400 mx-1">/</span>
+                          <span className={`font-mono ${m.player2_elo_change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {m.player2_elo_change > 0 && '+'}{m.player2_elo_change}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
