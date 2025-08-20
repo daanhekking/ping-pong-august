@@ -74,6 +74,56 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: error.message });
     }
     
+    // Persist updated ELO and stats back to the players table so refresh shows correct values
+    try {
+      // Fetch current player rows
+      const [{ data: p1, error: p1Err }, { data: p2, error: p2Err }] = await Promise.all([
+        supabase
+          .from('players')
+          .select('elo_rating, matches_played, matches_won, matches_lost, name')
+          .eq('id', player1_id)
+          .single(),
+        supabase
+          .from('players')
+          .select('elo_rating, matches_played, matches_won, matches_lost, name')
+          .eq('id', player2_id)
+          .single(),
+      ])
+      if (p1Err) throw p1Err
+      if (p2Err) throw p2Err
+
+      const player1Won = winner_id === player1_id ? 1 : 0
+      const player2Won = winner_id === player2_id ? 1 : 0
+
+      const [{ error: up1Err }, { error: up2Err }] = await Promise.all([
+        supabase
+          .from('players')
+          .update({
+            elo_rating: (p1?.elo_rating ?? 0) + player1_elo_change,
+            matches_played: (p1?.matches_played ?? 0) + 1,
+            matches_won: (p1?.matches_won ?? 0) + player1Won,
+            matches_lost: (p1?.matches_lost ?? 0) + (1 - player1Won),
+          })
+          .eq('id', player1_id),
+        supabase
+          .from('players')
+          .update({
+            elo_rating: (p2?.elo_rating ?? 0) + player2_elo_change,
+            matches_played: (p2?.matches_played ?? 0) + 1,
+            matches_won: (p2?.matches_won ?? 0) + player2Won,
+            matches_lost: (p2?.matches_lost ?? 0) + (1 - player2Won),
+          })
+          .eq('id', player2_id),
+      ])
+
+      if (up1Err) throw up1Err
+      if (up2Err) throw up2Err
+    } catch (updateErr) {
+      console.error('Failed to update players after match insert:', updateErr)
+      // Not failing the request since the match was recorded successfully,
+      // but surfacing the problem for logs.
+    }
+    
     console.log('POST /api/matches successful, returning:', data)
     return res.status(200).json(data[0]); // Return first item since insert returns array
   }

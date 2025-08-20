@@ -108,6 +108,14 @@ export default function Scoreboard() {
     }, 4000)
   }
 
+  // Validation function for match submission
+  function canSubmitMatch() {
+    // At least one player must score 11+ points to win
+    if (player1Score < 11 && player2Score < 11) return false
+    
+    return true
+  }
+
   // Calculate ELO change (basic example)
   function calculateEloChange(ratingA, ratingB, scoreA, scoreB) {
     const K = 32
@@ -120,15 +128,15 @@ export default function Scoreboard() {
   // Add a new match
   async function addMatch(e) {
     e.preventDefault()
-    if (!player1Id || !player2Id || player1Id === player2Id) {
-      setErrorMsg('Select two different players')
-      return
-    }
-    if (player1Score < 0 || player2Score < 0) {
-      setErrorMsg('Scores cannot be negative')
-      return
-    }
+    
+    // Clear previous error messages
     setErrorMsg('')
+    
+    // Check if at least one player scored 11+ points (ping pong rule)
+    if (player1Score < 11 && player2Score < 11) {
+      setErrorMsg('At least one player must score 11 or more points to win a match')
+      return
+    }
 
     const player1 = players.find((p) => p.id === player1Id)
     const player2 = players.find((p) => p.id === player2Id)
@@ -219,7 +227,12 @@ export default function Scoreboard() {
             />
             <button 
               type="submit"
-              className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              disabled={!newPlayerName.trim()}
+              className={`px-6 py-3 font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
+                newPlayerName.trim() 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               Add Player
             </button>
@@ -229,7 +242,6 @@ export default function Scoreboard() {
         {/* Add Match Form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Match</h2>
-          <p className="text-lg text-gray-600">Do not enter total matches played against each other like 0-2 or the total scored points like59-21. Just enter each match. </p>
           <form onSubmit={addMatch} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -250,9 +262,9 @@ export default function Scoreboard() {
                 <input
                   type="number"
                   min="0"
-                  placeholder="Score"
-                  value={player1Score}
-                  onChange={(e) => setPlayer1Score(Number(e.target.value))}
+                  placeholder="0"
+                  value={player1Score || ''}
+                  onChange={(e) => setPlayer1Score(Number(e.target.value) || 0)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
@@ -275,28 +287,34 @@ export default function Scoreboard() {
                 <input
                   type="number"
                   min="0"
-                  placeholder="Score"
-                  value={player2Score}
-                  onChange={(e) => setPlayer2Score(Number(e.target.value))}
+                  placeholder="0"
+                  value={player2Score || ''}
+                  onChange={(e) => setPlayer2Score(Number(e.target.value) || 0)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 />
               </div>
             </div>
             
+            {/* Validation Error Display */}
+            {errorMsg && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-800 text-sm">{errorMsg}</p>
+              </div>
+            )}
+            
             <button 
               type="submit"
-              className="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              disabled={!canSubmitMatch()}
+              className={`w-full px-6 py-3 font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
+                canSubmitMatch() 
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
             >
               Record Match
             </button>
           </form>
         </div>
-
-        {errorMsg && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-800">{errorMsg}</p>
-          </div>
-        )}
 
         {/* Leaderboard */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
