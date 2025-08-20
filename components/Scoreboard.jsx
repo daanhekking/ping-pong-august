@@ -229,6 +229,7 @@ export default function Scoreboard() {
         {/* Add Match Form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Match</h2>
+          <p className="text-lg text-gray-600">Do not enter total matches played against each other like 0-2 or the total scored points like59-21. Just enter each match. </p>
           <form onSubmit={addMatch} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
