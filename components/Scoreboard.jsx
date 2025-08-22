@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Confetti from './Confetti'
 
 export default function Scoreboard() {
   const [players, setPlayers] = useState([])
@@ -14,8 +15,15 @@ export default function Scoreboard() {
   const [player2Score, setPlayer2Score] = useState(0)
   const [errorMsg, setErrorMsg] = useState('')
 
+  // Confetti state
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [confettiPosition, setConfettiPosition] = useState({ x: 0, y: 0 })
+  
   // Toast notification state
   const [toasts, setToasts] = useState([])
+
+  // Dialog state for adding players
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false)
 
   // Fetch players and matches on mount
   useEffect(() => {
@@ -32,9 +40,7 @@ export default function Scoreboard() {
       console.log('Players data:', data)
       if (!Array.isArray(data)) throw new Error('Players data is not an array')
       setPlayers(data)
-      // Set default player selections if none yet
-      if (data.length > 0 && !player1Id) setPlayer1Id(data[0].id)
-      if (data.length > 1 && !player2Id) setPlayer2Id(data[1].id)
+      // Don't set default player selections - let user choose
     } catch (err) {
       console.error('Failed to fetch players:', err)
       setPlayers([])
@@ -74,6 +80,16 @@ export default function Scoreboard() {
       setErrorMsg('Player name cannot be empty')
       return
     }
+    
+    // Check if player name already exists
+    const existingPlayer = players.find(p => 
+      p.name.toLowerCase() === newPlayerName.trim().toLowerCase()
+    )
+    if (existingPlayer) {
+      setErrorMsg(`Player name "${newPlayerName.trim()}" is already taken`)
+      return
+    }
+    
     setErrorMsg('')
     try {
       const res = await fetch('/api/players', {
@@ -85,8 +101,7 @@ export default function Scoreboard() {
       const addedPlayer = await res.json()
       setPlayers((prev) => [...prev, addedPlayer])
       setNewPlayerName('')
-      if (!player1Id) setPlayer1Id(addedPlayer.id)
-      else if (!player2Id) setPlayer2Id(addedPlayer.id)
+      // Don't auto-select newly added player
       
       // Show success toast
       addToast(`Player "${addedPlayer.name}" added successfully!`, 'success')
@@ -96,6 +111,12 @@ export default function Scoreboard() {
     }
   }
 
+  // Confetti functions
+  function triggerConfetti(x, y) {
+    setConfettiPosition({ x, y })
+    setShowConfetti(true)
+  }
+  
   // Toast notification functions
   function addToast(message, type = 'success') {
     const id = Date.now()
@@ -110,6 +131,12 @@ export default function Scoreboard() {
 
   // Validation function for match submission
   function canSubmitMatch() {
+    // Both players must be selected
+    if (!player1Id || !player2Id) return false
+    
+    // Players cannot play against themselves
+    if (player1Id === player2Id) return false
+    
     // At least one player must score 11+ points to win
     if (player1Score < 11 && player2Score < 11) return false
     
@@ -195,10 +222,19 @@ export default function Scoreboard() {
 
       setPlayer1Score(0)
       setPlayer2Score(0)
+      setPlayer1Id('') // Reset player selections
+      setPlayer2Id('')
       
-      // Show success toast
+      // Show confetti
       const winner = players.find(p => p.id === winnerId)
-      addToast(`Match recorded! ${winner ? winner.name : 'Unknown'} won!`, 'success')
+      // Get the button position for confetti
+      const button = document.querySelector('button[type="submit"]')
+      if (button) {
+        const rect = button.getBoundingClientRect()
+        const x = rect.left + rect.width / 2
+        const y = rect.top + rect.height / 2
+        triggerConfetti(x, y)
+      }
     } catch (err) {
       setErrorMsg(err.message)
       addToast(`Failed to record match: ${err.message}`, 'error')
@@ -213,51 +249,29 @@ export default function Scoreboard() {
           <p className="text-lg text-gray-600">Track your matches and climb the rankings</p>
         </div>
 
-        {/* Add Player Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Add New Player</h2>
-          <form onSubmit={addPlayer} className="flex gap-3">
-            <input
-              type="text"
-              placeholder="Enter player name"
-              value={newPlayerName}
-              onChange={(e) => setNewPlayerName(e.target.value)}
-              required
-              className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-            />
-            <button 
-              type="submit"
-              disabled={!newPlayerName.trim()}
-              className={`px-6 py-3 font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
-                newPlayerName.trim() 
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
-                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              }`}
-            >
-              Add Player
-            </button>
-          </form>
-        </div>
-
         {/* Add Match Form */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Record New Match</h2>
           <form onSubmit={addMatch} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Player 1
-                </label>
                 <select 
                   value={player1Id} 
                   onChange={(e) => setPlayer1Id(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    !player1Id ? 'text-gray-500' : 'text-gray-900'
+                  }`}
                 >
-                  {players.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (ELO: {p.elo_rating})
-                    </option>
-                  ))}
+                  <option value="" disabled className="text-gray-500">
+                    Select Player 1
+                  </option>
+                  {players
+                    .filter(p => p.id !== player2Id) // Filter out player 2
+                    .map((p) => (
+                      <option key={p.id} value={p.id} className="text-gray-900">
+                        {p.name} (ELO: {p.elo_rating})
+                      </option>
+                    ))}
                 </select>
                 <input
                   type="number"
@@ -270,19 +284,23 @@ export default function Scoreboard() {
               </div>
 
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Player 2
-                </label>
                 <select 
                   value={player2Id} 
                   onChange={(e) => setPlayer2Id(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className={`w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                    !player2Id ? 'text-gray-500' : 'text-gray-900'
+                  }`}
                 >
-                  {players.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} (ELO: {p.elo_rating})
-                    </option>
-                  ))}
+                  <option value="" disabled className="text-gray-500">
+                    Select Player 2
+                  </option>
+                  {players
+                    .filter(p => p.id !== player1Id) // Filter out player 1
+                    .map((p) => (
+                      <option key={p.id} value={p.id} className="text-gray-900">
+                        {p.name} (ELO: {p.elo_rating})
+                      </option>
+                    ))}
                 </select>
                 <input
                   type="number"
@@ -302,6 +320,8 @@ export default function Scoreboard() {
               </div>
             )}
             
+
+            
             <button 
               type="submit"
               disabled={!canSubmitMatch()}
@@ -318,7 +338,15 @@ export default function Scoreboard() {
 
         {/* Leaderboard */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Leaderboard</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-semibold text-gray-900">Leaderboard</h2>
+            <button
+              onClick={() => setShowAddPlayerDialog(true)}
+              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            >
+              Add Player
+            </button>
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -368,7 +396,6 @@ export default function Scoreboard() {
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Score</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Player 2</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Score</th>
-                  <th className="text-left py-3 px-4 font-medium text-gray-700">Winner</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">Played</th>
                   <th className="text-left py-3 px-4 font-medium text-gray-700">ELO Change</th>
                 </tr>
@@ -377,20 +404,26 @@ export default function Scoreboard() {
                 {(Array.isArray(matches) ? matches : []).map((m) => {
                   const player1 = players.find((p) => p.id === m.player1_id)
                   const player2 = players.find((p) => p.id === m.player2_id)
-                  const winner = players.find((p) => p.id === m.winner_id)
+                  const player1Won = m.winner_id === m.player1_id
+                  const player2Won = m.winner_id === m.player2_id
                   return (
                     <tr key={m.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-3 px-4 font-medium text-gray-900">{player1 ? player1.name : 'Unknown'}</td>
-                      <td className="py-3 px-4 font-mono text-gray-700">{m.player1_score}</td>
-                      <td className="py-3 px-4 font-medium text-gray-900">{player2 ? player2.name : 'Unknown'}</td>
-                      <td className="py-3 px-4 font-mono text-gray-700">{m.player2_score}</td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          winner ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                          player1Won ? 'bg-green-100 text-green-800' : player2Won ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {winner ? winner.name : 'Draw'}
+                          {player1 ? player1.name : 'Unknown'}
                         </span>
                       </td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{m.player1_score}</td>
+                      <td className="py-3 px-4">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                          player2Won ? 'bg-green-100 text-green-800' : player1Won ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {player2 ? player2.name : 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 font-mono text-gray-700">{m.player2_score}</td>
                       <td className="py-3 px-4 text-sm text-gray-600">
                         {(m.played_at || m.created_at) 
                           ? new Date(m.played_at || m.created_at).toLocaleString('nb-NO', { 
@@ -420,6 +453,57 @@ export default function Scoreboard() {
         </div>
       </div>
       
+      {/* Add Player Dialog */}
+      {showAddPlayerDialog && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Player</h3>
+              <button
+                onClick={() => setShowAddPlayerDialog(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={addPlayer} className="space-y-4">
+              <input
+                type="text"
+                placeholder="Enter player name"
+                value={newPlayerName}
+                onChange={(e) => setNewPlayerName(e.target.value)}
+                required
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              />
+              <div className="flex gap-3">
+                <button 
+                  type="submit"
+                  disabled={!newPlayerName.trim()}
+                  className={`flex-1 px-4 py-2 font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
+                    newPlayerName.trim() 
+                      ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
+                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  Add Player
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddPlayerDialog(false)}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+
+
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map((toast) => (
@@ -437,6 +521,24 @@ export default function Scoreboard() {
           </div>
         ))}
       </div>
+
+      {/* Confetti Component */}
+      <Confetti 
+        isActive={showConfetti}
+        onComplete={() => setShowConfetti(false)}
+        position={confettiPosition}
+        colors={[
+          '#AA21FF',    // confetti-primary
+          '#E6BCFF',    // confetti-secondary
+          '#C8E9C7',    // confetti-accent
+          '#FDCC93',    // confetti-highlight
+          '#60A5FA',    // confetti-blue
+          '#34D399',    // confetti-green
+          '#FBBF24',    // confetti-yellow
+          '#F87171'     // confetti-red
+        ]}
+        particleCount={300}
+      />
     </div>
   )
 }
