@@ -1,16 +1,19 @@
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
+import Layout from '../components/Layout'
 
-const Scoreboard = dynamic(() => import('../components/Scoreboard'), { ssr: false })
+const Leaderboard = dynamic(() => import('../components/Leaderboard'), { ssr: false })
 
 export default function Home() {
   return (
     <>
       <Head>
-        <title>Ping Pong Scoreboard</title>
-        <meta name="description" content="Scoreboard app converted to Next.js" />
+        <title>Ping Pong Leaderboard</title>
+        <meta name="description" content="Track your ping pong matches and climb the rankings" />
       </Head>
-      <Scoreboard />
+      <Layout activePage="leaderboard">
+        <Leaderboard />
+      </Layout>
     </>
   )
 }
