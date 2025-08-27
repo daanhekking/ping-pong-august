@@ -1,9 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Confetti from './Confetti'
 import { LoadingSpinner } from './SkeletonLoaders'
 import { useData } from '../lib/DataContext'
+import Button from './Button'
+import DialogActions from './DialogActions'
+import StatsCards from './StatsCards'
+import Table, { TableContainer, TableHead, TableBody, TableHeader, TableRow, TableCell } from './Table'
+
+
+
 
 export default function Leaderboard() {
   const { players, matches, isLoading, hasLoadedOnce, addPlayer: addPlayerToContext, addMatch: addMatchToContext } = useData()
@@ -19,6 +26,7 @@ export default function Leaderboard() {
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiPosition, setConfettiPosition] = useState({ x: 0, y: 0 })
+  const confettiTriggeredRef = useRef(false)
   
   // Toast notification state
   const [toasts, setToasts] = useState([])
@@ -27,32 +35,55 @@ export default function Leaderboard() {
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false)
   const [dialogAnimation, setDialogAnimation] = useState(false)
 
-  // Function to close dialog with animation
-  const closeDialog = () => {
+  // Dialog state for adding matches
+  const [showAddMatchDialog, setShowAddMatchDialog] = useState(false)
+  const [matchDialogAnimation, setMatchDialogAnimation] = useState(false)
+
+  // Function to close player dialog with animation
+  const closePlayerDialog = () => {
     setDialogAnimation(false)
     setTimeout(() => setShowAddPlayerDialog(false), 200)
   }
 
+  // Function to close match dialog with animation
+  const closeMatchDialog = () => {
+    setMatchDialogAnimation(false)
+    setTimeout(() => setShowAddMatchDialog(false), 200)
+    // Reset form state when closing
+    setPlayer1Id('')
+    setPlayer2Id('')
+    setPlayer1Score(0)
+    setPlayer2Score(0)
+    setErrorMsg('')
+  }
 
-
-  // Handle ESC key to close dialog
+  // Handle ESC key to close dialogs
   useEffect(() => {
     const handleEscKey = (event) => {
-      if (event.key === 'Escape' && showAddPlayerDialog) {
-        closeDialog()
+      if (event.key === 'Escape') {
+        if (showAddPlayerDialog) {
+          closePlayerDialog()
+        } else if (showAddMatchDialog) {
+          closeMatchDialog()
+        }
       }
     }
 
-    if (showAddPlayerDialog) {
+    if (showAddPlayerDialog || showAddMatchDialog) {
       document.addEventListener('keydown', handleEscKey)
       // Trigger animation after a brief delay
-      setTimeout(() => setDialogAnimation(true), 10)
+      if (showAddPlayerDialog) {
+        setTimeout(() => setDialogAnimation(true), 10)
+      }
+      if (showAddMatchDialog) {
+        setTimeout(() => setMatchDialogAnimation(true), 10)
+      }
     }
 
     return () => {
       document.removeEventListener('keydown', handleEscKey)
     }
-  }, [showAddPlayerDialog])
+  }, [showAddPlayerDialog, showAddMatchDialog])
 
 
 
@@ -169,15 +200,25 @@ export default function Leaderboard() {
       setPlayer1Id('') // Reset player selections
       setPlayer2Id('')
       
-      // Show confetti
-      const winner = players.find(p => p.id === winnerId)
-      // Get the button position for confetti
-      const button = document.querySelector('button[type="submit"]')
-      if (button) {
-        const rect = button.getBoundingClientRect()
-        const x = rect.left + rect.width / 2
-        const y = rect.top + rect.height / 2
-        triggerConfetti(x, y)
+      // Close the dialog
+      closeMatchDialog()
+      
+      // Show confetti only once per successful submission
+      if (!confettiTriggeredRef.current) {
+        confettiTriggeredRef.current = true
+        const winner = players.find(p => p.id === winnerId)
+        // Get the button position for confetti
+        const button = document.querySelector('button[type="submit"]')
+        if (button) {
+          const rect = button.getBoundingClientRect()
+          const x = rect.left + rect.width / 2
+          const y = rect.top + rect.height / 2
+          triggerConfetti(x, y)
+        }
+        // Reset the ref after a short delay to allow for future submissions
+        setTimeout(() => {
+          confettiTriggeredRef.current = false
+        }, 1000)
       }
     } catch (err) {
       setErrorMsg(err.message)
@@ -186,159 +227,89 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="py-8 px-6 min-h-screen">
+    <div className="pt-8 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Leaderboard</h1>
-          <p className="text-lg text-gray-600">Track your matches and climb the rankings</p>
+        <div className="text-left">
+          <h1 className="mb-3 text-[#171717]">Leaderboard</h1>
         </div>
 
-        {/* Add Match Form */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Add New Match</h2>
-          {isLoading && !hasLoadedOnce ? (
-            <LoadingSpinner />
-          ) : (
-            <form onSubmit={handleAddMatch} className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <select 
-                    value={player1Id} 
-                    onChange={(e) => setPlayer1Id(e.target.value)}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      !player1Id ? 'text-gray-500' : 'text-gray-900'
-                    }`}
-                  >
-                    <option value="" disabled className="text-gray-500">
-                      Select Player 1
-                    </option>
-                    {players
-                      .filter(p => p.id !== player2Id) // Filter out player 2
-                      .map((p) => (
-                        <option key={p.id} value={p.id} className="text-gray-900">
-                          {p.name} (ELO: {p.elo_rating})
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={player1Score || ''}
-                    onChange={(e) => setPlayer1Score(Number(e.target.value) || 0)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <select 
-                    value={player2Id} 
-                    onChange={(e) => setPlayer2Id(e.target.value)}
-                    className={`w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
-                      !player2Id ? 'text-gray-500' : 'text-gray-900'
-                    }`}
-                  >
-                    <option value="" disabled className="text-gray-500">
-                      Select Player 2
-                    </option>
-                    {players
-                      .filter(p => p.id !== player1Id) // Filter out player 1
-                      .map((p) => (
-                        <option key={p.id} value={p.id} className="text-gray-900">
-                          {p.name} (ELO: {p.elo_rating})
-                        </option>
-                      ))}
-                  </select>
-                  <input
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    value={player2Score || ''}
-                    onChange={(e) => setPlayer2Score(Number(e.target.value) || 0)}
-                    className="w-full px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
-                  />
-                </div>
-              </div>
-              
-              {/* Validation Error Display */}
-              {errorMsg && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-                  <p className="text-red-800 text-sm">{errorMsg}</p>
-                </div>
-              )}
-              
-              <button 
-                type="submit"
-                disabled={!canSubmitMatch()}
-                className={`w-full px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
-                  canSubmitMatch() 
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
-                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                Add Match
-              </button>
-            </form>
-          )}
-        </div>
+        {/* Stats Cards */}
+        <StatsCards players={players} matches={matches} />
 
         {/* Leaderboard */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900">Player Rankings</h2>
-            <button
-              onClick={() => {
-                setShowAddPlayerDialog(true)
-                setDialogAnimation(false)
-              }}
-              className="px-4 py-2 border border-blue-600 text-blue-600 rounded-lg hover:bg-blue-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-            >
-              Add Player
-            </button>
+            <h2 className="text-[#171717]">Player Rankings</h2>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => {
+                  setShowAddMatchDialog(true)
+                  setMatchDialogAnimation(false)
+                }}
+                variant="primary"
+                size="lg"
+                className="rounded-full"
+              >
+                Add Match
+              </Button>
+              <Button
+                onClick={() => {
+                  setShowAddPlayerDialog(true)
+                  setDialogAnimation(false)
+                }}
+                variant="secondary"
+                size="lg"
+                className="rounded-full"
+              >
+                Add Player
+              </Button>
+            </div>
           </div>
           {isLoading && !hasLoadedOnce ? (
             <LoadingSpinner />
           ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
-                  <thead>
-                                      <tr className="border-b border-gray-200">
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-16">Rank</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-48">Player</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-24">ELO</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-24">Played</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-20">Won</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-700 w-20">Lost</th>
-                  </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {players
-                      .slice()
-                      .sort((a, b) => b.elo_rating - a.elo_rating)
-                      .map((p, index) => (
-                        <tr key={p.id} className={`hover:bg-gray-50 transition-colors ${index === 0 ? 'bg-yellow-50' : ''}`}>
-                          <td className="py-3 px-4 font-medium text-gray-900">
-                            #{index + 1}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              {index === 0 && <span className="text-yellow-600 text-lg">🥇</span>}
-                              {index === 1 && <span className="text-gray-400 text-lg">🥈</span>}
-                              {index === 2 && <span className="text-amber-600 text-lg">🥉</span>}
-                              <span className={`font-medium ${index === 0 ? 'text-yellow-700' : 'text-gray-900'}`}>
-                                {p.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 font-mono font-semibold text-gray-900">{p.elo_rating}</td>
-                          <td className="py-3 px-4 text-gray-600">{p.matches_played}</td>
-                          <td className="py-3 px-4 text-green-600 font-medium">{p.matches_won}</td>
-                          <td className="py-3 px-4 text-red-600 font-medium">{p.matches_lost}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
+                          <TableContainer>
+              <Table>
+                <TableHead>
+                  <TableRow isHeader>
+                    <TableHeader width="sm">Rank</TableHeader>
+                    <TableHeader width="xxl">Player</TableHeader>
+                    <TableHeader width="md">ELO</TableHeader>
+                    <TableHeader width="md">Played</TableHeader>
+                    <TableHeader width="md">Won</TableHeader>
+                    <TableHeader width="md">Lost</TableHeader>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {players
+                    .slice()
+                    .sort((a, b) => b.elo_rating - a.elo_rating)
+                    .map((p, index) => (
+                      <TableRow key={p.id} isSpecial={index === 0}>
+                        <TableCell>
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-900">
+                            {index + 1}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            {index === 0 && <span className="text-yellow-600">🥇</span>}
+                            {index === 1 && <span className="text-gray-400">🥈</span>}
+                            {index === 2 && <span className="text-amber-600">🥉</span>}
+                            <span className="font-medium text-gray-900">
+                              {p.name}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-medium">{p.elo_rating}</TableCell>
+                        <TableCell text="muted">{p.matches_played}</TableCell>
+                        <TableCell text="success">{p.matches_won}</TableCell>
+                        <TableCell text="danger">{p.matches_lost}</TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
             )}
         </div>
       </div>
@@ -349,7 +320,7 @@ export default function Leaderboard() {
           className={`fixed inset-0 bg-black transition-all duration-200 ease-out ${
             dialogAnimation ? 'bg-opacity-30' : 'bg-opacity-0'
           } flex items-center justify-center z-50 p-4`}
-          onClick={(e) => e.target === e.currentTarget && closeDialog()}
+          onClick={(e) => e.target === e.currentTarget && closePlayerDialog()}
         >
           <div 
             className={`bg-white rounded-xl shadow-2xl max-w-md w-full p-6 transform transition-all duration-200 ease-out ${
@@ -361,7 +332,7 @@ export default function Leaderboard() {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Add New Player</h3>
               <button
-                onClick={closeDialog}
+                onClick={closePlayerDialog}
                 className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -376,28 +347,117 @@ export default function Leaderboard() {
                 value={newPlayerName}
                 onChange={(e) => setNewPlayerName(e.target.value)}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors"
               />
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={closeDialog}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button 
-                  type="submit"
-                  disabled={!newPlayerName.trim()}
-                  className={`flex-1 px-4 py-2 font-medium rounded-lg focus:ring-2 focus:ring-offset-2 transition-colors ${
-                    newPlayerName.trim() 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500' 
-                      : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                  }`}
-                >
-                  Add Player
-                </button>
+              <DialogActions
+                onCancel={closePlayerDialog}
+                onConfirm={() => {}}
+                confirmText="Add Player"
+                confirmDisabled={!newPlayerName.trim()}
+              />
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Match Dialog */}
+      {showAddMatchDialog && (
+        <div 
+          className={`fixed inset-0 bg-black transition-all duration-200 ease-out ${
+            matchDialogAnimation ? 'bg-opacity-30' : 'bg-opacity-0'
+          } flex items-center justify-center z-50 p-4`}
+          onClick={(e) => e.target === e.currentTarget && closeMatchDialog()}
+        >
+          <div 
+            className={`bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 transform transition-all duration-200 ease-out ${
+              matchDialogAnimation 
+                ? 'scale-100 opacity-100 translate-y-0' 
+                : 'scale-95 opacity-0 translate-y-4'
+            }`}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Add New Match</h3>
+              <button
+                onClick={closeMatchDialog}
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-gray-100"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <form onSubmit={handleAddMatch} className="space-y-4">
+              <div className="flex flex-col lg:flex-row gap-4 w-full">
+                <div className="flex flex-col lg:flex-row gap-3 items-end lg:flex-1">
+                  <select 
+                    value={player1Id} 
+                    onChange={(e) => setPlayer1Id(e.target.value)}
+                    className={`w-full lg:flex-1 px-3 py-2 body-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors ${
+                      !player1Id ? 'text-gray-500' : 'text-[#171717]'
+                    }`}
+                  >
+                    <option value="" disabled className="text-gray-500">
+                      Select Player 1
+                    </option>
+                    {players
+                      .filter(p => p.id !== player2Id) // Filter out player 2
+                      .map((p) => (
+                        <option key={p.id} value={p.id} className="text-[#171717]">
+                          {p.name} (ELO: {p.elo_rating})
+                        </option>
+                      ))}
+                  </select>
+                  <input
+                    type="text"
+                    placeholder="0"
+                    value={player1Score || ''}
+                    onChange={(e) => setPlayer1Score(Number(e.target.value) || 0)}
+                    className="w-20 px-3 py-2 body-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors text-center"
+                  />
+                </div>
+
+                <div className="flex flex-col lg:flex-row gap-3 items-end lg:flex-1">
+                  <input
+                    type="text"
+                    placeholder="0"
+                    value={player2Score || ''}
+                    onChange={(e) => setPlayer2Score(Number(e.target.value) || 0)}
+                    className="w-20 px-3 py-2 body-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors text-center"
+                  />
+                  <select 
+                    value={player2Id} 
+                    onChange={(e) => setPlayer2Id(e.target.value)}
+                    className={`w-full lg:flex-1 px-3 py-2 body-medium border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors ${
+                      !player2Id ? 'text-gray-500' : 'text-[#171717]'
+                    }`}
+                  >
+                    <option value="" disabled className="text-gray-500">
+                      Select Player 2
+                    </option>
+                    {players
+                      .filter(p => p.id !== player1Id) // Filter out player 1
+                      .map((p) => (
+                        <option key={p.id} value={p.id} className="text-[#171717]">
+                          {p.name} (ELO: {p.elo_rating})
+                        </option>
+                      ))}
+                  </select>
+                </div>
               </div>
+              
+              {/* Validation Error Display */}
+              {errorMsg && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-3 sm:p-4">
+                  <p className="body-medium text-red-800">{errorMsg}</p>
+                </div>
+              )}
+              
+              <DialogActions
+                onCancel={closeMatchDialog}
+                onConfirm={() => {}}
+                confirmText="Add Match"
+                confirmDisabled={!canSubmitMatch()}
+              />
             </form>
           </div>
         </div>
