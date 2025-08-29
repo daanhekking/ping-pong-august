@@ -165,7 +165,22 @@ export default function Leaderboard() {
     // Clear previous error messages
     setErrorMsg('')
     
-    // Check if at least one player scored 11+ points (ping pong rule)
+    // Debug: Log the current state
+    console.log('Submitting match with data:', {
+      player1Id,
+      player2Id,
+      player1Score,
+      player2Score,
+      players: players.map(p => ({ id: p.id, name: p.name }))
+    })
+    
+    // Validate that players are selected
+    if (!player1Id || !player2Id || player1Id === '' || player2Id === '') {
+      setErrorMsg('Please select both players')
+      return
+    }
+    
+    // Check if at least one player scored 11+ points to win (ping pong rule)
     if (player1Score < 11 && player2Score < 11) {
       setErrorMsg('At least one player must score 11 or more points to win a match')
       return
@@ -183,17 +198,22 @@ export default function Leaderboard() {
     const player2EloChange = -player1EloChange
     const winnerId = player1Score > player2Score ? player1Id : player2Id
 
+    // Debug: Log the match data being sent
+    const matchData = {
+      player1_id: player1Id,
+      player2_id: player2Id,
+      player1_score: player1Score,
+      player2_score: player2Score,
+      winner_id: winnerId,
+      player1_elo_change: player1EloChange,
+      player2_elo_change: player2EloChange,
+      played_at: new Date().toISOString(),
+    }
+    
+    console.log('Sending match data to API:', matchData)
+
     try {
-      await addMatchToContext({
-        player1_id: player1Id,
-        player2_id: player2Id,
-        player1_score: player1Score,
-        player2_score: player2Score,
-        winner_id: winnerId,
-        player1_elo_change: player1EloChange,
-        player2_elo_change: player2EloChange,
-        played_at: new Date().toISOString(),
-      })
+      await addMatchToContext(matchData)
 
       setPlayer1Score(0)
       setPlayer2Score(0)
