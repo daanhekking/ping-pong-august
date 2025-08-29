@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import Confetti from './Confetti'
 import { LoadingSpinner } from './SkeletonLoaders'
 import { useData } from '../lib/DataContext'
@@ -8,6 +8,7 @@ import Button from './Button'
 import DialogActions from './DialogActions'
 import StatsCards from './StatsCards'
 import Table, { TableContainer, TableHead, TableBody, TableHeader, TableRow, TableCell } from './Table'
+import { ToastContainer } from './Toast'
 
 
 
@@ -26,7 +27,6 @@ export default function Leaderboard() {
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiPosition, setConfettiPosition] = useState({ x: 0, y: 0 })
-  const confettiTriggeredRef = useRef(false)
   
   // Toast notification state
   const [toasts, setToasts] = useState([])
@@ -203,23 +203,14 @@ export default function Leaderboard() {
       // Close the dialog
       closeMatchDialog()
       
-      // Show confetti only once per successful submission
-      if (!confettiTriggeredRef.current) {
-        confettiTriggeredRef.current = true
+      // Show confetti after dialog is closed
+      setTimeout(() => {
         const winner = players.find(p => p.id === winnerId)
-        // Get the button position for confetti
-        const button = document.querySelector('button[type="submit"]')
-        if (button) {
-          const rect = button.getBoundingClientRect()
-          const x = rect.left + rect.width / 2
-          const y = rect.top + rect.height / 2
-          triggerConfetti(x, y)
-        }
-        // Reset the ref after a short delay to allow for future submissions
-        setTimeout(() => {
-          confettiTriggeredRef.current = false
-        }, 1000)
-      }
+        // Trigger confetti from bottom center of screen
+        const x = window.innerWidth / 2
+        const y = window.innerHeight // Start from very bottom of screen
+        triggerConfetti(x, y)
+      }, 250) // Wait for dialog close animation to complete
     } catch (err) {
       setErrorMsg(err.message)
       addToast(`Failed to add match: ${err.message}`, 'error')
@@ -235,6 +226,8 @@ export default function Leaderboard() {
 
         {/* Stats Cards */}
         <StatsCards players={players} matches={matches} />
+
+
 
         {/* Leaderboard */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
@@ -464,22 +457,9 @@ export default function Leaderboard() {
       )}
 
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`px-6 py-3 rounded-lg shadow-lg text-white font-medium transform transition-all duration-300 ${
-              toast.type === 'success' 
-                ? 'bg-green-500' 
-                : toast.type === 'error' 
-                ? 'bg-red-500' 
-                : 'bg-blue-500'
-            }`}
-          >
-            {toast.message}
-          </div>
-        ))}
-      </div>
+      <ToastContainer toasts={toasts} onRemoveToast={(id) => {
+        setToasts(prev => prev.filter(toast => toast.id !== id))
+      }} />
 
       {/* Confetti Component */}
       <Confetti 

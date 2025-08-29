@@ -10,16 +10,16 @@ class ConfettiParticle {
     this.color = color
     this.size = Math.random() * 20 + 8  // Bigger particles
     this.speedX = Math.random() * 8 - 4
-    this.speedY = Math.random() * -12 - 6
-    this.gravity = 0.15
-    this.drag = 0.98
+    this.speedY = Math.random() * -20 - 15  // Much stronger upward velocity
+    this.gravity = 0.12  // Slightly reduced gravity for longer flight
+    this.drag = 0.99  // Less drag for more momentum
     this.rotation = Math.random() * 360
     this.rotationSpeed = Math.random() * 20 - 10
     this.opacity = 1
-    this.fadeSpeed = 0.008
+    this.fadeSpeed = 0.006  // Slower fade for longer visibility
     this.bounceCount = 0
-    this.maxBounces = 2
-    this.bounceDamping = 0.7
+    this.maxBounces = 1  // Fewer bounces for cleaner effect
+    this.bounceDamping = 0.6  // More bouncy
     this.shape = Math.random() > 0.5 ? 'rect' : 'circle'
     this.width = this.size
     this.height = this.size * (0.5 + Math.random() * 0.5)
@@ -112,13 +112,13 @@ export default function Confetti({
     // Create initial particles from the specified position
     const newParticles = []
     const screenWidth = window.innerWidth
-    const spreadWidth = screenWidth * 0.75 // 75% of screen width
+    const spreadWidth = screenWidth * 0.6 // 60% of screen width for more focused spread
     
     for (let i = 0; i < particleCount; i++) {
       newParticles.push(
         new ConfettiParticle(
-          position.x + (Math.random() - 0.5) * spreadWidth, // Spread particles across 75% of screen width
-          position.y + (Math.random() - 0.5) * 100,
+          position.x + (Math.random() - 0.5) * spreadWidth, // Spread particles across 60% of screen width
+          position.y + (Math.random() - 0.5) * 60, // Tighter vertical spread for more focused upward burst
           colors[Math.floor(Math.random() * colors.length)]
         )
       )

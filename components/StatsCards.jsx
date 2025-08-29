@@ -4,75 +4,6 @@ import React from 'react'
 import Chip from './Chip'
 
 export default function StatsCards({ players, matches }) {
-  // Calculate Most Improved (player with biggest ELO gain in current week vs previous week)
-  const getMostImproved = () => {
-    if (matches.length === 0) return null
-    
-    // Calculate current week (last 7 days)
-    const oneWeekAgo = new Date()
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-    
-    // Calculate previous week (8-14 days ago)
-    const twoWeeksAgo = new Date()
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14)
-    
-    const currentWeekMatches = matches.filter(match => {
-      const matchDate = new Date(match.played_at || match.created_at)
-      return matchDate >= oneWeekAgo
-    })
-    
-    const previousWeekMatches = matches.filter(match => {
-      const matchDate = new Date(match.played_at || match.created_at)
-      return matchDate >= twoWeeksAgo && matchDate < oneWeekAgo
-    })
-    
-    // Calculate improvements for current week
-    const currentWeekImprovements = {}
-    currentWeekMatches.forEach(match => {
-      if (match.player1_elo_change > 0) {
-        currentWeekImprovements[match.player1_id] = (currentWeekImprovements[match.player1_id] || 0) + match.player1_elo_change
-      }
-      if (match.player2_elo_change > 0) {
-        currentWeekImprovements[match.player2_id] = (currentWeekImprovements[match.player2_id] || 0) + match.player2_elo_change
-      }
-    })
-    
-    // Calculate improvements for previous week
-    const previousWeekImprovements = {}
-    previousWeekMatches.forEach(match => {
-      if (match.player1_elo_change > 0) {
-        previousWeekImprovements[match.player1_id] = (previousWeekImprovements[match.player1_id] || 0) + match.player1_elo_change
-      }
-      if (match.player2_elo_change > 0) {
-        previousWeekImprovements[match.player2_id] = (previousWeekImprovements[match.player2_id] || 0) + match.player2_elo_change
-      }
-    })
-    
-    // Find player with most improvements in current week
-    const mostImprovedId = Object.keys(currentWeekImprovements).reduce((a, b) => 
-      currentWeekImprovements[a] > currentWeekImprovements[b] ? a : b, null
-    )
-    
-    if (!mostImprovedId) return null
-    
-    const player = players.find(p => p.id === mostImprovedId)
-    const currentWeekImprovement = currentWeekImprovements[mostImprovedId]
-    const previousWeekImprovement = previousWeekImprovements[mostImprovedId] || 0
-    
-    // Calculate percentage change
-    let percentageChange = 0
-    if (previousWeekImprovement > 0) {
-      percentageChange = Math.round(((currentWeekImprovement - previousWeekImprovement) / previousWeekImprovement) * 100)
-    } else if (currentWeekImprovement > 0) {
-      percentageChange = 100 // If no improvement previous week but improvement this week, show 100% increase
-    }
-    
-    return { 
-      player, 
-      improvement: currentWeekImprovement, 
-      percentageChange 
-    }
-  }
 
   // Calculate Total Matches with week-over-week trend
   const getTotalMatches = () => {
@@ -177,47 +108,38 @@ export default function StatsCards({ players, matches }) {
     return { player, streak }
   }
 
-  const mostImproved = getMostImproved()
+  // Calculate Biggest ELO Change (match with largest ELO swing)
+  const getBiggestEloChange = () => {
+    if (matches.length === 0) return null
+    
+    const biggestEloChange = matches.reduce((biggest, match) => {
+      const matchEloChange = Math.abs(match.player1_elo_change) + Math.abs(match.player2_elo_change)
+      const currentBiggest = Math.abs(biggest.player1_elo_change) + Math.abs(biggest.player2_elo_change)
+      return matchEloChange > currentBiggest ? match : biggest
+    })
+    
+    const player1 = players.find(p => p.id === biggestEloChange.player1_id)
+    const player2 = players.find(p => p.id === biggestEloChange.player2_id)
+    const totalEloChange = Math.abs(biggestEloChange.player1_elo_change) + Math.abs(biggestEloChange.player2_elo_change)
+    
+    return { 
+      match: biggestEloChange, 
+      player1, 
+      player2, 
+      totalEloChange,
+      player1Change: biggestEloChange.player1_elo_change,
+      player2Change: biggestEloChange.player2_elo_change
+    }
+  }
+
   const totalMatches = getTotalMatches()
   const winRateLeader = getWinRateLeader()
   const winningStreak = getWinningStreak()
+  const biggestEloChange = getBiggestEloChange()
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      {/* Most Improved */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-medium text-gray-700">Most points scored</span>
-          <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-            <span className="text-white text-lg">📈</span>
-          </div>
-        </div>
-        {mostImproved ? (
-          <>
-            <div className="text-3xl font-medium text-gray-900 mb-1">
-              +{mostImproved.improvement}
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-gray-700">
-                {mostImproved.player.name} this week
-              </span>
-              {mostImproved.percentageChange !== 0 && (
-                <Chip 
-                  variant={mostImproved.percentageChange > 0 ? 'success' : 'danger'}
-                  size="sm"
-                >
-                  {mostImproved.percentageChange > 0 ? '+' : ''}{mostImproved.percentageChange}%
-                </Chip>
-              )}
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="text-3xl font-medium text-gray-900 mb-1">-</div>
-            <div className="text-sm font-medium text-gray-700">-</div>
-          </>
-        )}
-      </div>
+
 
       {/* Total Matches */}
       <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
@@ -285,6 +207,31 @@ export default function StatsCards({ players, matches }) {
             </div>
             <div className="text-sm font-medium text-gray-700">
               {winningStreak.player.name}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="text-3xl font-medium text-gray-900 mb-1">-</div>
+            <div className="text-sm font-medium text-gray-700">-</div>
+          </>
+        )}
+      </div>
+
+      {/* Biggest ELO Change */}
+      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-medium text-gray-700">Biggest ELO Swing</span>
+          <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+            <span className="text-white text-lg">⚡</span>
+          </div>
+        </div>
+        {biggestEloChange ? (
+          <>
+            <div className="text-3xl font-medium text-gray-900 mb-1">
+              {biggestEloChange.player1Change > 0 ? '+' : ''}{biggestEloChange.player1Change}
+            </div>
+            <div className="text-sm font-medium text-gray-700">
+              {biggestEloChange.player1?.name || 'Unknown'} vs {biggestEloChange.player2?.name || 'Unknown'}
             </div>
           </>
         ) : (
