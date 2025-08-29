@@ -85,10 +85,18 @@ export default async function handler(req, res) {
       if (error) {
         console.error('Supabase error in POST /api/matches:', error)
         console.error('Error details:', JSON.stringify(error, null, 2))
+        
+        // Check if this is a database trigger/function error
+        if (error.message && error.message.includes('player1')) {
+          console.error('This appears to be a database trigger/function error expecting "player1" field')
+          console.error('The database schema may have triggers that expect different field names')
+          console.error('SOLUTION: Check your database for triggers or functions that reference "player1" instead of "player1_id"')
+        }
+        
         return res.status(500).json({ 
           error: error.message,
           details: error,
-          hint: 'Check database schema and constraints'
+          hint: 'Check database schema and constraints. This may be a database trigger expecting "player1" instead of "player1_id"'
         });
       }
       
