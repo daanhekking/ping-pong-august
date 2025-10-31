@@ -94,7 +94,21 @@ export default function Layout({ children, activePage = 'leaderboard' }) {
                 }`}
               >
                 <span className="text-lg">🏆</span>
-                <span>Leaderboard</span>
+                <span>Rankings</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/monthly-winners"
+                onClick={closeSidebar}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors label-large ${
+                  activePage === 'monthly-winners' 
+                    ? 'bg-white bg-opacity-10 text-white border border-white border-opacity-20' 
+                    : 'text-gray-300 hover:bg-white hover:bg-opacity-10 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🎯</span>
+                <span>Monthly Winners</span>
               </Link>
             </li>
             <li>

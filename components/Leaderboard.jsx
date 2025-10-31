@@ -13,8 +13,33 @@ import { ToastContainer } from './Toast'
 
 
 
+// Award icon mapping
+const AWARD_ICONS = {
+  mostPoints: '⚡',
+  highestElo: '👑',
+  winningStreak: '🔥',
+  giantKiller: '🗡️',
+  socialButterfly: '🦋',
+  bestDefense: '🛡️',
+  highestMatch: '💥',
+  eloSwing: '📈',
+  biggestLoser: '💀',
+}
+
+const AWARD_NAMES = {
+  mostPoints: 'Most Points',
+  highestElo: 'Highest ELO',
+  winningStreak: 'Winning Streak',
+  giantKiller: 'Giant Killer',
+  socialButterfly: 'Social Butterfly',
+  bestDefense: 'Best Defense',
+  highestMatch: 'Highest Match',
+  eloSwing: 'ELO Swing',
+  biggestLoser: 'Biggest Loser',
+}
+
 export default function Leaderboard() {
-  const { players, matches, isLoading, hasLoadedOnce, addPlayer: addPlayerToContext, addMatch: addMatchToContext } = useData()
+  const { players, matches, monthlyAwards, isLoading, hasLoadedOnce, addPlayer: addPlayerToContext, addMatch: addMatchToContext } = useData()
 
   // Form states
   const [newPlayerName, setNewPlayerName] = useState('')
@@ -30,6 +55,15 @@ export default function Leaderboard() {
   
   // Toast notification state
   const [toasts, setToasts] = useState([])
+  
+  // Group awards by player
+  const playerAwards = {}
+  monthlyAwards.forEach(award => {
+    if (!playerAwards[award.player_id]) {
+      playerAwards[award.player_id] = []
+    }
+    playerAwards[award.player_id].push(award)
+  })
 
   // Dialog state for adding players
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false)
@@ -38,6 +72,15 @@ export default function Leaderboard() {
   // Dialog state for adding matches
   const [showAddMatchDialog, setShowAddMatchDialog] = useState(false)
   const [matchDialogAnimation, setMatchDialogAnimation] = useState(false)
+  const [isSubmittingMatch, setIsSubmittingMatch] = useState(false)
+  
+  // Dialog state for scoring matches
+  const [showScoreDialog, setShowScoreDialog] = useState(false)
+  const [scoreDialogAnimation, setScoreDialogAnimation] = useState(false)
+  
+  // Dialog state for André prank
+  const [showAndrePrankDialog, setShowAndrePrankDialog] = useState(false)
+  const [andrePrankAnimation, setAndrePrankAnimation] = useState(false)
 
   // Function to close player dialog with animation
   const closePlayerDialog = () => {
@@ -241,7 +284,7 @@ export default function Leaderboard() {
     <div className="pt-8 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-left">
-          <h1 className="mb-3 text-[#171717]">Leaderboard</h1>
+          <h1 className="mb-3 text-[#171717]">Rankings</h1>
         </div>
 
         {/* Stats Cards */}
@@ -291,35 +334,56 @@ export default function Leaderboard() {
                     <TableHeader width="md">Played</TableHeader>
                     <TableHeader width="md">Won</TableHeader>
                     <TableHeader width="md">Lost</TableHeader>
+                    <TableHeader width="xl">Awards</TableHeader>
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {players
                     .slice()
                     .sort((a, b) => b.elo_rating - a.elo_rating)
-                    .map((p, index) => (
-                      <TableRow key={p.id} isSpecial={index === 0}>
-                        <TableCell>
-                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-900">
-                            {index + 1}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-3">
-                            {index === 0 && <span className="text-yellow-600">🥇</span>}
-                            {index === 1 && <span className="text-gray-400">🥈</span>}
-                            {index === 2 && <span className="text-amber-600">🥉</span>}
-                            <span className="font-medium text-gray-900">
-                              {p.name}
-                            </span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="font-medium">{p.elo_rating}</TableCell>
-                        <TableCell text="muted">{p.matches_played}</TableCell>
-                        <TableCell text="success">{p.matches_won}</TableCell>
-                        <TableCell text="danger">{p.matches_lost}</TableCell>
-                      </TableRow>
-                    ))}
+                    .map((p, index) => {
+                      const awards = playerAwards[p.id] || []
+                      return (
+                        <TableRow key={p.id} isSpecial={index === 0}>
+                          <TableCell>
+                            <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm font-medium text-gray-900">
+                              {index + 1}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-3">
+                              {index === 0 && <span className="text-yellow-600">🥇</span>}
+                              {index === 1 && <span className="text-gray-400">🥈</span>}
+                              {index === 2 && <span className="text-amber-600">🥉</span>}
+                              <span className="font-medium text-gray-900">
+                                {p.name}
+                              </span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="font-medium">{p.elo_rating}</TableCell>
+                          <TableCell text="muted">{p.matches_played}</TableCell>
+                          <TableCell text="success">{p.matches_won}</TableCell>
+                          <TableCell text="danger">{p.matches_lost}</TableCell>
+                          <TableCell>
+                            {awards.length > 0 ? (
+                              <div className="flex flex-wrap gap-1">
+                                {awards.map((award, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="inline-flex items-center text-lg"
+                                    title={AWARD_NAMES[award.category] || award.category}
+                                  >
+                                    {AWARD_ICONS[award.category] || '🏆'}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-gray-400 text-sm">No awards yet</span>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
                 </TableBody>
               </Table>
             </TableContainer>

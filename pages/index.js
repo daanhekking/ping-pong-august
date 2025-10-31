@@ -8,7 +8,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Ping Pong Leaderboard</title>
+        <title>Ping Pong Rankings</title>
         <meta name="description" content="Track your ping pong matches and climb the rankings" />
       </Head>
       <Layout activePage="leaderboard">

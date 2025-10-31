@@ -6,6 +6,7 @@ const DialogActions = ({
   onConfirm, 
   confirmText, 
   confirmDisabled = false,
+  loading = false,
   className = ''
 }) => {
   return (
@@ -14,15 +15,23 @@ const DialogActions = ({
         type="button"
         onClick={onCancel}
         variant="secondary"
+        disabled={loading}
       >
         Cancel
       </Button>
       <Button 
         type="submit"
-        disabled={confirmDisabled}
+        disabled={confirmDisabled || loading}
         variant="primary"
       >
-        {confirmText}
+        {loading ? (
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            {confirmText}
+          </div>
+        ) : (
+          confirmText
+        )}
       </Button>
     </div>
   )
