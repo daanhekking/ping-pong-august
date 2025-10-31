@@ -209,7 +209,7 @@ export default function ExportAwards() {
     <div className="pt-8 pb-6 px-6">
       <div className="max-w-4xl mx-auto space-y-8">
         <div className="text-left">
-          <h1 className="mb-3 text-[#171717]">Export Awards CSV</h1>
+          <h1 className="mb-3 text-[#171717]">Export Monthly Challenge Awards CSV</h1>
           <p className="text-gray-600">Generate a CSV file to import historical awards into your database</p>
         </div>
 

@@ -2,17 +2,17 @@ import dynamic from 'next/dynamic'
 import Head from 'next/head'
 import Layout from '../components/Layout'
 
-const Leaderboard = dynamic(() => import('../components/Leaderboard'), { ssr: false })
+const MonthlyWinners = dynamic(() => import('../components/MonthlyWinners'), { ssr: false })
 
 export default function Home() {
   return (
     <>
       <Head>
-        <title>Ping Pong Rankings</title>
-        <meta name="description" content="Track your ping pong matches and climb the rankings" />
+        <title>Monthly Challenges - Ping Pong</title>
+        <meta name="description" content="See this month's challenge winners" />
       </Head>
-      <Layout activePage="leaderboard">
-        <Leaderboard />
+      <Layout activePage="monthly-winners">
+        <MonthlyWinners />
       </Layout>
     </>
   )

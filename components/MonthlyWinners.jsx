@@ -19,7 +19,7 @@ function Tooltip({ children, text }) {
         {children}
       </div>
       {isVisible && (
-        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-3 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg whitespace-normal max-w-xs">
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg max-w-[640px] w-max">
           <div className="text-center">{text}</div>
           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
         </div>
@@ -31,9 +31,10 @@ function Tooltip({ children, text }) {
 export default function MonthlyWinners() {
   const { players, matches, isLoading, hasLoadedOnce, refreshData } = useData()
   
-  // Default to August 2025 (month index 7 = August)
-  const [selectedMonth, setSelectedMonth] = useState(7) // August
-  const [selectedYear, setSelectedYear] = useState(2025)
+  // Default to current calendar month
+  const now = new Date()
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   
   const displayDate = new Date(selectedYear, selectedMonth, 1)
   const currentMonth = displayDate.toLocaleString('en-US', { month: 'long' })
@@ -405,13 +406,10 @@ export default function MonthlyWinners() {
   return (
     <div className="pt-8 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header with month info and selector */}
+        {/* Header with month selector */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="text-left">
-            <h1 className="mb-2 text-[#171717]">Monthly Winners</h1>
-            <p className="text-gray-600 body-large">
-              {currentMonth} {currentYear} • {monthlyMatches.length} matches played
-            </p>
+            <h1 className="mb-2 text-[#171717]">Monthly Challenges</h1>
           </div>
           
           {/* Month Selector */}
@@ -444,12 +442,6 @@ export default function MonthlyWinners() {
         {/* Stat Boards Layout */}
         {isLoading && !hasLoadedOnce ? (
           <LoadingSpinner />
-        ) : !winners || monthlyMatches.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-12 text-center">
-            <div className="text-6xl mb-4">🏓</div>
-            <h3 className="text-xl font-medium text-gray-900 mb-2">No matches yet this month</h3>
-            <p className="text-gray-600">Start playing to see this month's winners!</p>
-          </div>
         ) : (
           <StatBoardsLayout winners={winners} monthlyMatches={monthlyMatches} />
         )}
@@ -462,13 +454,25 @@ export default function MonthlyWinners() {
 function StatBoardsLayout({ winners, monthlyMatches }) {
   const [expandedCategories, setExpandedCategories] = useState({})
   
+  // Check if we have data
+  const hasData = winners && monthlyMatches.length > 0
+  
+  // Format rivalries for display (only if we have data)
+  const rivalriesForDisplay = hasData && winners.topRivalries ? winners.topRivalries.map(rivalry => ({
+    player: {
+      name: `${rivalry.player1.name} vs ${rivalry.player2.name}`
+    },
+    id: `${rivalry.player1Id}-${rivalry.player2Id}`,
+    matchCount: rivalry.matchCount
+  })) : []
+
   const challenges = [
     {
       id: 'mostPoints',
       title: 'Most Points Scored',
       icon: '⚡',
       description: 'Player who scored the most total points across all matches this month',
-      allPlayers: winners.mostPoints,
+      allPlayers: hasData ? winners.mostPoints : [],
       getStatValue: (player) => player.totalPoints,
       statLabel: 'Total Points',
     },
@@ -477,7 +481,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Highest ELO Score',
       icon: '👑',
       description: 'Player with the highest current ELO rating (skill level)',
-      allPlayers: winners.highestElo,
+      allPlayers: hasData ? winners.highestElo : [],
       getStatValue: (player) => player.elo_rating,
       statLabel: 'ELO Rating',
     },
@@ -486,7 +490,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Winning Streak',
       icon: '🔥',
       description: 'Longest consecutive wins in a row this month - who\'s on fire?',
-      allPlayers: winners.winningStreak,
+      allPlayers: hasData ? winners.winningStreak : [],
       getStatValue: (player) => player.longestStreak,
       statLabel: 'Consecutive Wins',
     },
@@ -495,7 +499,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Giant Killer',
       icon: '🗡️',
       description: 'Most wins against higher-ranked opponents - underdog champion!',
-      allPlayers: winners.giantKiller,
+      allPlayers: hasData ? winners.giantKiller : [],
       getStatValue: (player) => player.giantKillerWins,
       statLabel: 'Upset Wins',
     },
@@ -504,16 +508,25 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Social Butterfly',
       icon: '🦋',
       description: 'Played against the most different opponents - great for team building!',
-      allPlayers: winners.socialButterfly,
+      allPlayers: hasData ? winners.socialButterfly : [],
       getStatValue: (player) => player.uniqueOpponentsCount,
       statLabel: 'Different Opponents',
+    },
+    {
+      id: 'rivalryAward',
+      title: 'Rivalry Award',
+      icon: '⚔️',
+      description: 'Two players who faced each other the most this month - fierce competition!',
+      allPlayers: rivalriesForDisplay,
+      getStatValue: (rivalry) => rivalry.matchCount,
+      statLabel: 'Matches',
     },
     {
       id: 'bestDefense',
       title: 'Best Defense',
       icon: '🛡️',
       description: 'Lowest average points conceded per match - defensive excellence',
-      allPlayers: winners.leastPointsAgainst,
+      allPlayers: hasData ? winners.leastPointsAgainst : [],
       getStatValue: (player) => player.avgPointsAgainst?.toFixed(1),
       statLabel: 'Avg Points Against',
     },
@@ -522,7 +535,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Highest Single Match Score',
       icon: '🔥',
       description: 'Most points scored in a single match - explosive performance!',
-      allPlayers: winners.mostPointsInMatch,
+      allPlayers: hasData ? winners.mostPointsInMatch : [],
       getStatValue: (player) => player.maxPointsInMatch,
       statLabel: 'Max Points',
     },
@@ -531,7 +544,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Biggest ELO Swing',
       icon: '📈',
       description: 'Largest ELO change in a single match - dramatic upset or domination',
-      allPlayers: winners.biggestEloSwing,
+      allPlayers: hasData ? winners.biggestEloSwing : [],
       getStatValue: (player) => player.biggestEloSwing,
       statLabel: 'ELO Swing',
     },
@@ -540,7 +553,7 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
       title: 'Biggest Loser',
       icon: '💀',
       description: 'Most losses this month - keep practicing, you\'ll get there!',
-      allPlayers: winners.biggestLoser,
+      allPlayers: hasData ? winners.biggestLoser : [],
       getStatValue: (player) => player.losses,
       statLabel: 'Losses',
     },
@@ -554,131 +567,75 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
   }
   
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {challenges.map((challenge, idx) => {
-          const isExpanded = expandedCategories[challenge.id]
-          const playersToShow = isExpanded ? challenge.allPlayers : challenge.allPlayers.slice(0, 3)
-          const hasMore = challenge.allPlayers.length > 3
-          
-          return (
-            <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center gap-3 mb-4">
-                <span className="text-2xl">{challenge.icon}</span>
-                <Tooltip text={challenge.description}>
-                  <h3 className="text-lg font-semibold text-gray-900 border-b border-dotted border-gray-400">
-                    {challenge.title}
-                  </h3>
-                </Tooltip>
-              </div>
-              
-              <div className="space-y-2">
-                {playersToShow.map((player, position) => (
-                  <div
-                    key={position}
-                    className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                      position === 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50 hover:bg-gray-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                        position === 0 ? 'bg-yellow-400 text-white' : 'bg-white text-gray-700 border border-gray-200'
-                      }`}>
-                        {position + 1}
-                      </div>
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {player.player?.name || player.name}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-bold ${position === 0 ? 'text-yellow-700' : 'text-gray-900'}`}>
-                        {challenge.getStatValue(player)}
-                      </div>
-                      <div className="text-xs text-gray-600">{challenge.statLabel}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              
-              {hasMore && (
-                <button
-                  onClick={() => toggleCategory(challenge.id)}
-                  className="w-full mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                >
-                  {isExpanded ? 'Show less' : `Show more (${challenge.allPlayers.length - 3} more)`}
-                </button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-      
-      {/* Rivalry Award - Special Card */}
-      {winners.topRivalries && winners.topRivalries.length > 0 && (
-        <div className="bg-gradient-to-br from-red-50 to-orange-50 rounded-2xl shadow-sm border-2 border-red-200 p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-2xl">⚔️</span>
-            <Tooltip text="Two players who faced each other the most this month - fierce competition!">
-              <h3 className="text-lg font-semibold text-gray-900 border-b border-dotted border-gray-400">
-                Rivalry Award
-              </h3>
-            </Tooltip>
-          </div>
-          
-          <div className="bg-white rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4 flex-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center text-lg font-bold text-red-700">
-                    {winners.topRivalries[0].player1.name[0]}
-                  </div>
-                  <div className="font-semibold text-gray-900">
-                    {winners.topRivalries[0].player1.name}
-                  </div>
-                </div>
-                
-                <div className="text-xl font-bold text-red-600">VS</div>
-                
-                <div className="flex items-center gap-2">
-                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-lg font-bold text-orange-700">
-                    {winners.topRivalries[0].player2.name[0]}
-                  </div>
-                  <div className="font-semibold text-gray-900">
-                    {winners.topRivalries[0].player2.name}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="text-right ml-4">
-                <div className="text-3xl font-bold text-gray-900">
-                  {winners.topRivalries[0].matchCount}
-                </div>
-                <div className="text-xs text-gray-600">Matches</div>
-              </div>
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {challenges.map((challenge, idx) => {
+        const isExpanded = expandedCategories[challenge.id]
+        const playersToShow = isExpanded ? challenge.allPlayers : challenge.allPlayers.slice(0, 3)
+        const hasMore = challenge.allPlayers.length > 3
+        const isEmpty = challenge.allPlayers.length === 0
+        
+        return (
+          <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-2xl">{challenge.icon}</span>
+              <Tooltip text={challenge.description}>
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-dotted border-gray-400">
+                  {challenge.title}
+                </h3>
+              </Tooltip>
             </div>
             
-            {winners.topRivalries.length > 1 && (
-              <div className="mt-4 pt-4 border-t border-gray-200">
-                <div className="text-xs text-gray-600 mb-2">Other Notable Rivalries:</div>
+            {isEmpty ? (
+              <div className="py-12 text-center">
+                <div className="text-4xl mb-3 opacity-20">{challenge.icon}</div>
+                <p className="text-gray-500 text-sm">No matches played yet</p>
+                <p className="text-gray-400 text-xs mt-1">Be the first to compete!</p>
+              </div>
+            ) : (
+              <>
                 <div className="space-y-2">
-                  {winners.topRivalries.slice(1, 4).map((rivalry, idx) => (
-                    <div key={idx} className="flex items-center justify-between text-sm">
-                      <div className="text-gray-700">
-                        {rivalry.player1.name} vs {rivalry.player2.name}
+                  {playersToShow.map((player, position) => (
+                    <div
+                      key={position}
+                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
+                        position === 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                          position === 0 ? 'bg-yellow-400 text-white' : 'bg-white text-gray-700 border border-gray-200'
+                        }`}>
+                          {position + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium text-gray-900">
+                            {player.player?.name || player.name}
+                          </div>
+                        </div>
                       </div>
-                      <div className="font-medium text-gray-900">
-                        {rivalry.matchCount} matches
+                      <div className="text-right">
+                        <div className={`text-lg font-bold ${position === 0 ? 'text-yellow-700' : 'text-gray-900'}`}>
+                          {challenge.getStatValue(player)}
+                        </div>
+                        <div className="text-xs text-gray-600">{challenge.statLabel}</div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+                
+                {hasMore && (
+                  <button
+                    onClick={() => toggleCategory(challenge.id)}
+                    className="w-full mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
+                  >
+                    {isExpanded ? 'Show less' : `Show more (${challenge.allPlayers.length - 3} more)`}
+                  </button>
+                )}
+              </>
             )}
           </div>
-        </div>
-      )}
+        )
+      })}
     </div>
   )
 }

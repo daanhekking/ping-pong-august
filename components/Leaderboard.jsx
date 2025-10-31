@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import Confetti from './Confetti'
 import { LoadingSpinner } from './SkeletonLoaders'
 import { useData } from '../lib/DataContext'
@@ -20,6 +21,7 @@ const AWARD_ICONS = {
   winningStreak: '🔥',
   giantKiller: '🗡️',
   socialButterfly: '🦋',
+  rivalryAward: '⚔️',
   bestDefense: '🛡️',
   highestMatch: '💥',
   eloSwing: '📈',
@@ -27,14 +29,15 @@ const AWARD_ICONS = {
 }
 
 const AWARD_NAMES = {
-  mostPoints: 'Most Points',
-  highestElo: 'Highest ELO',
+  mostPoints: 'Most Points Scored',
+  highestElo: 'Highest ELO Score',
   winningStreak: 'Winning Streak',
   giantKiller: 'Giant Killer',
   socialButterfly: 'Social Butterfly',
+  rivalryAward: 'Rivalry Award',
   bestDefense: 'Best Defense',
-  highestMatch: 'Highest Match',
-  eloSwing: 'ELO Swing',
+  highestMatch: 'Highest Single Match Score',
+  eloSwing: 'Biggest ELO Swing',
   biggestLoser: 'Biggest Loser',
 }
 
@@ -284,7 +287,7 @@ export default function Leaderboard() {
     <div className="pt-8 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-left">
-          <h1 className="mb-3 text-[#171717]">Rankings</h1>
+          <h1 className="mb-3 text-[#171717]">Total Ranking</h1>
         </div>
 
         {/* Stats Cards */}
@@ -355,9 +358,12 @@ export default function Leaderboard() {
                               {index === 0 && <span className="text-yellow-600">🥇</span>}
                               {index === 1 && <span className="text-gray-400">🥈</span>}
                               {index === 2 && <span className="text-amber-600">🥉</span>}
-                              <span className="font-medium text-gray-900">
+                              <Link 
+                                href={`/player/${p.id}`}
+                                className="font-medium text-gray-900 hover:text-[#171717] hover:underline transition-colors cursor-pointer"
+                              >
                                 {p.name}
-                              </span>
+                              </Link>
                             </div>
                           </TableCell>
                           <TableCell className="font-medium">{p.elo_rating}</TableCell>

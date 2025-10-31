@@ -88,27 +88,27 @@ export default function Layout({ children, activePage = 'leaderboard' }) {
                 href="/"
                 onClick={closeSidebar}
                 className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors label-large ${
-                  activePage === 'leaderboard' 
-                    ? 'bg-white bg-opacity-10 text-white border border-white border-opacity-20' 
-                    : 'text-gray-300 hover:bg-white hover:bg-opacity-10 hover:text-white'
-                }`}
-              >
-                <span className="text-lg">🏆</span>
-                <span>Rankings</span>
-              </Link>
-            </li>
-            <li>
-              <Link 
-                href="/monthly-winners"
-                onClick={closeSidebar}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors label-large ${
                   activePage === 'monthly-winners' 
                     ? 'bg-white bg-opacity-10 text-white border border-white border-opacity-20' 
                     : 'text-gray-300 hover:bg-white hover:bg-opacity-10 hover:text-white'
                 }`}
               >
                 <span className="text-lg">🎯</span>
-                <span>Monthly Winners</span>
+                <span>Monthly Challenges</span>
+              </Link>
+            </li>
+            <li>
+              <Link 
+                href="/rankings"
+                onClick={closeSidebar}
+                className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors label-large ${
+                  activePage === 'rankings' 
+                    ? 'bg-white bg-opacity-10 text-white border border-white border-opacity-20' 
+                    : 'text-gray-300 hover:bg-white hover:bg-opacity-10 hover:text-white'
+                }`}
+              >
+                <span className="text-lg">🏆</span>
+                <span>Total Ranking</span>
               </Link>
             </li>
             <li>
