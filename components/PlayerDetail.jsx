@@ -137,21 +137,21 @@ export default function PlayerDetail({ playerId }) {
 
             {/* Win/Loss Stats */}
             <div className="flex gap-4">
-              <div className="text-center px-6 py-4 bg-green-50 rounded-xl border border-green-200">
+              <div className="text-center px-6 py-4 bg-green-50 rounded-2xl border border-green-200">
                 <div className="text-2xl font-bold text-green-700">{player.matches_won}</div>
-                <div className="text-xs text-green-600 uppercase tracking-wide">Wins</div>
+                <div className="text-sm font-medium text-green-700">Wins</div>
               </div>
-              <div className="text-center px-6 py-4 bg-red-50 rounded-xl border border-red-200">
+              <div className="text-center px-6 py-4 bg-red-50 rounded-2xl border border-red-200">
                 <div className="text-2xl font-bold text-red-700">{player.matches_lost}</div>
-                <div className="text-xs text-red-600 uppercase tracking-wide">Losses</div>
+                <div className="text-sm font-medium text-red-700">Losses</div>
               </div>
-              <div className="text-center px-6 py-4 bg-blue-50 rounded-xl border border-blue-200">
+              <div className="text-center px-6 py-4 bg-blue-50 rounded-2xl border border-blue-200">
                 <div className="text-2xl font-bold text-blue-700">
                   {player.matches_played > 0 
                     ? Math.round((player.matches_won / player.matches_played) * 100) 
                     : 0}%
                 </div>
-                <div className="text-xs text-blue-600 uppercase tracking-wide">Win Rate</div>
+                <div className="text-sm font-medium text-blue-700">Win rate</div>
               </div>
             </div>
           </div>
@@ -182,7 +182,7 @@ export default function PlayerDetail({ playerId }) {
                   return new Date(`${aMonth} 1, ${aYear}`) - new Date(`${bMonth} 1, ${bYear}`)
                 })
                 .map(([monthYear, awards]) => (
-                  <div key={monthYear} className="border-l-4 border-yellow-400 pl-4">
+                  <div key={monthYear}>
                     <h3 className="font-semibold text-gray-900 mb-3">{monthYear}</h3>
                     <div className="flex flex-wrap gap-3">
                       {awards.map((award, idx) => (

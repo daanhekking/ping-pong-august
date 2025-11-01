@@ -47,18 +47,25 @@ export default function MonthlyWinners() {
            matchDate.getFullYear() === selectedYear
   })
   
-  // Get available months from matches data
+  // Get available months from August 2025 to current month
   const getAvailableMonths = () => {
-    const monthsSet = new Set()
-    matches.forEach(match => {
-      const matchDate = new Date(match.played_at || match.created_at)
-      const monthKey = `${matchDate.getFullYear()}-${matchDate.getMonth()}`
-      monthsSet.add(monthKey)
-    })
-    return Array.from(monthsSet).map(key => {
-      const [year, month] = key.split('-')
-      return { year: parseInt(year), month: parseInt(month) }
-    }).sort((a, b) => {
+    const months = []
+    const startDate = new Date(2025, 7, 1) // August 2025 (month 7 = August)
+    const currentDate = new Date()
+    
+    // Generate all months from August 2025 to current month
+    let iterDate = new Date(startDate)
+    while (iterDate <= currentDate) {
+      months.push({
+        year: iterDate.getFullYear(),
+        month: iterDate.getMonth()
+      })
+      // Move to next month
+      iterDate.setMonth(iterDate.getMonth() + 1)
+    }
+    
+    // Sort descending (newest first)
+    return months.sort((a, b) => {
       if (a.year !== b.year) return b.year - a.year
       return b.month - a.month
     })
