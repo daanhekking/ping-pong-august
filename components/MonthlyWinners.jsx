@@ -618,7 +618,7 @@ function StatBoardsLayout({ winners, monthlyMatches, selectedMonth, selectedYear
     },
     {
       id: 'highestMatch',
-      title: 'Highest Single Match Score',
+      title: 'Highest Match Score',
       icon: '🔥',
       description: 'Most points scored in a single match - explosive performance!',
       allPlayers: hasData ? winners.mostPointsInMatch : [],
@@ -658,7 +658,7 @@ function StatBoardsLayout({ winners, monthlyMatches, selectedMonth, selectedYear
         <TableHead>
           <TableRow isHeader>
             <TableHeader width="lg">Challenge</TableHeader>
-            <TableHeader width="lg">Winner</TableHeader>
+            <TableHeader width="xxl">Winner</TableHeader>
             <TableHeader width="md" className="text-right">Score</TableHeader>
             <TableHeader width="md" className="text-center">Participants</TableHeader>
             <TableHeader width="sm"></TableHeader>
@@ -687,7 +687,7 @@ function StatBoardsLayout({ winners, monthlyMatches, selectedMonth, selectedYear
                   <TableCell>
                     {isEmpty ? (
                       <span className="text-sm text-gray-400 italic">
-                        {isPastMonth ? 'Nobody stepped up this month... 🦗' : 'Your name could be here! Be the legend who starts 🚀'}
+                        {isPastMonth ? 'Nobody stepped up this month... 🦗' : 'Be the first legend who plays this month! 🚀'}
                       </span>
                     ) : (
                       <span className="text-gray-900 font-medium">{topPlayer.player?.name || topPlayer.name}</span>
