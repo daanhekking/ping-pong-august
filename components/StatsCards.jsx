@@ -142,7 +142,7 @@ export default function StatsCards({ players, matches }) {
 
 
       {/* Total Matches */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">Total Matches</span>
           <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -168,7 +168,7 @@ export default function StatsCards({ players, matches }) {
       </div>
 
       {/* Win Rate Leader */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">Win Rate Leader</span>
           <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
@@ -193,7 +193,7 @@ export default function StatsCards({ players, matches }) {
       </div>
 
       {/* Winning Streak */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">Winning Streak</span>
           <div className="w-10 h-10 bg-red-500 rounded-lg flex items-center justify-center">
@@ -218,7 +218,7 @@ export default function StatsCards({ players, matches }) {
       </div>
 
       {/* Biggest ELO Change */}
-      <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <span className="text-sm font-medium text-gray-700">Biggest ELO Swing</span>
           <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">

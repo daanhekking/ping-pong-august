@@ -10,7 +10,7 @@ export default function AllMatches() {
   const { players, matches, isLoading, hasLoadedOnce } = useData()
 
   return (
-    <div className="pt-8 pb-6 px-6">
+    <div className="pt-12 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-left">
           <h1 className="mb-3 text-[#171717]">All Matches</h1>

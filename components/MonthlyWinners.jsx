@@ -4,22 +4,47 @@ import React, { useState, useEffect } from 'react'
 import { LoadingSpinner } from './SkeletonLoaders'
 import { useData } from '../lib/DataContext'
 import Chip from './Chip'
+import Button from './Button'
+import AddPlayerDialog from './AddPlayerDialog'
+import AddMatchDialog from './AddMatchDialog'
+import Table, { TableHead, TableBody, TableRow, TableHeader, TableCell, TableContainer } from './Table'
 
 // Tooltip component
 function Tooltip({ children, text }) {
   const [isVisible, setIsVisible] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+  const triggerRef = React.useRef(null)
+  
+  const handleMouseEnter = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect()
+      setPosition({
+        top: rect.top - 10,
+        left: rect.left + rect.width / 2
+      })
+    }
+    setIsVisible(true)
+  }
   
   return (
     <div className="relative inline-block">
       <div
-        onMouseEnter={() => setIsVisible(true)}
+        ref={triggerRef}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={() => setIsVisible(false)}
         className="cursor-help"
       >
         {children}
       </div>
       {isVisible && (
-        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg max-w-[640px] w-max">
+        <div 
+          className="fixed z-50 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg max-w-[640px] w-max"
+          style={{
+            top: `${position.top}px`,
+            left: `${position.left}px`,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
           <div className="text-center">{text}</div>
           <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
         </div>
@@ -29,12 +54,16 @@ function Tooltip({ children, text }) {
 }
 
 export default function MonthlyWinners() {
-  const { players, matches, isLoading, hasLoadedOnce, refreshData } = useData()
+  const { players, matches, isLoading, hasLoadedOnce, refreshData, addPlayer, addMatch } = useData()
   
   // Default to current calendar month
   const now = new Date()
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
+  
+  // Dialog state
+  const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false)
+  const [showAddMatchDialog, setShowAddMatchDialog] = useState(false)
   
   const displayDate = new Date(selectedYear, selectedMonth, 1)
   const currentMonth = displayDate.toLocaleString('en-US', { month: 'long' })
@@ -411,58 +440,108 @@ export default function MonthlyWinners() {
   const winners = calculateMonthlyWinners()
   
   return (
-    <div className="pt-8 pb-6 px-6">
+    <div className="pt-12 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
-        {/* Header with month selector */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div className="text-left">
-            <h1 className="mb-2 text-[#171717]">Monthly Challenges</h1>
-          </div>
-          
-          {/* Month Selector */}
-          {availableMonths.length > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-600">View month:</span>
-              <select
-                value={`${selectedYear}-${selectedMonth}`}
-                onChange={(e) => {
-                  const [year, month] = e.target.value.split('-')
-                  setSelectedYear(parseInt(year))
-                  setSelectedMonth(parseInt(month))
-                }}
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors bg-white text-gray-900 font-medium"
-              >
-                {availableMonths.map(({ year, month }) => {
-                  const date = new Date(year, month, 1)
-                  const monthName = date.toLocaleString('en-US', { month: 'long' })
-                  return (
-                    <option key={`${year}-${month}`} value={`${year}-${month}`}>
-                      {monthName} {year}
-                    </option>
-                  )
-                })}
-              </select>
-            </div>
-          )}
+        {/* Header */}
+        <div className="text-left">
+          <h1 className="mb-3 text-[#171717]">Monthly Challenges</h1>
         </div>
         
-        {/* Stat Boards Layout */}
-        {isLoading && !hasLoadedOnce ? (
-          <LoadingSpinner />
-        ) : (
-          <StatBoardsLayout winners={winners} monthlyMatches={monthlyMatches} />
-        )}
+        {/* Controls and Challenges Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+            {/* Month and Style Selectors */}
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-[#171717]">Select Month</h2>
+              {availableMonths.length > 0 && (
+                <select
+                  value={`${selectedYear}-${selectedMonth}`}
+                  onChange={(e) => {
+                    const [year, month] = e.target.value.split('-')
+                    setSelectedYear(parseInt(year))
+                    setSelectedMonth(parseInt(month))
+                  }}
+                  className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#171717] focus:border-[#171717] transition-colors bg-white text-gray-900 font-medium"
+                >
+                  {availableMonths.map(({ year, month }) => {
+                    const date = new Date(year, month, 1)
+                    const monthName = date.toLocaleString('en-US', { month: 'long' })
+                    return (
+                      <option key={`${year}-${month}`} value={`${year}-${month}`}>
+                        {monthName} {year}
+                      </option>
+                    )
+                  })}
+                </select>
+              )}
+            </div>
+            
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowAddMatchDialog(true)}
+                variant="primary"
+                size="lg"
+                className="rounded-full"
+              >
+                Add Match
+              </Button>
+              <Button
+                onClick={() => setShowAddPlayerDialog(true)}
+                variant="secondary"
+                size="lg"
+                className="rounded-full"
+              >
+                Add Player
+              </Button>
+            </div>
+          </div>
+          
+          {/* Stat Boards Layout */}
+          {isLoading && !hasLoadedOnce ? (
+            <LoadingSpinner />
+          ) : (
+            <StatBoardsLayout 
+              winners={winners} 
+              monthlyMatches={monthlyMatches}
+              selectedMonth={selectedMonth}
+              selectedYear={selectedYear}
+            />
+          )}
+        </div>
       </div>
+      
+      {/* Dialogs */}
+      <AddPlayerDialog
+        isOpen={showAddPlayerDialog}
+        onClose={() => setShowAddPlayerDialog(false)}
+        onSubmit={addPlayer}
+        players={players}
+      />
+      
+      <AddMatchDialog
+        isOpen={showAddMatchDialog}
+        onClose={() => setShowAddMatchDialog(false)}
+        onSubmit={addMatch}
+        players={players}
+      />
     </div>
   )
 }
 
 // Stat Boards Layout - Data-Dense Tables
-function StatBoardsLayout({ winners, monthlyMatches }) {
-  const [expandedCategories, setExpandedCategories] = useState({})
+function StatBoardsLayout({ winners, monthlyMatches, selectedMonth, selectedYear }) {
+  const [expandedRows, setExpandedRows] = useState({})
   
   // Check if we have data
   const hasData = winners && monthlyMatches.length > 0
+  
+  // Check if selected month is in the past
+  const now = new Date()
+  const currentMonth = now.getMonth()
+  const currentYear = now.getFullYear()
+  const isCurrentMonth = selectedMonth === currentMonth && selectedYear === currentYear
+  const isPastMonth = selectedYear < currentYear || (selectedYear === currentYear && selectedMonth < currentMonth)
   
   // Format rivalries for display (only if we have data)
   const rivalriesForDisplay = hasData && winners.topRivalries ? winners.topRivalries.map(rivalry => ({
@@ -566,83 +645,110 @@ function StatBoardsLayout({ winners, monthlyMatches }) {
     },
   ]
   
-  const toggleCategory = (categoryId) => {
-    setExpandedCategories(prev => ({
+  const toggleRow = (challengeId) => {
+    setExpandedRows(prev => ({
       ...prev,
-      [categoryId]: !prev[categoryId]
+      [challengeId]: !prev[challengeId]
     }))
   }
   
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-      {challenges.map((challenge, idx) => {
-        const isExpanded = expandedCategories[challenge.id]
-        const playersToShow = isExpanded ? challenge.allPlayers : challenge.allPlayers.slice(0, 3)
-        const hasMore = challenge.allPlayers.length > 3
-        const isEmpty = challenge.allPlayers.length === 0
-        
-        return (
-          <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <span className="text-2xl">{challenge.icon}</span>
-              <Tooltip text={challenge.description}>
-                <h3 className="text-lg font-semibold text-gray-900 border-b border-dotted border-gray-400">
-                  {challenge.title}
-                </h3>
-              </Tooltip>
-            </div>
+    <TableContainer>
+      <Table>
+        <TableHead>
+          <TableRow isHeader>
+            <TableHeader width="lg">Challenge</TableHeader>
+            <TableHeader width="lg">Winner</TableHeader>
+            <TableHeader width="md" className="text-right">Score</TableHeader>
+            <TableHeader width="md" className="text-center">Participants</TableHeader>
+            <TableHeader width="sm"></TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {challenges.map((challenge) => {
+            const isEmpty = challenge.allPlayers.length === 0
+            const topPlayer = challenge.allPlayers[0]
+            const isExpanded = expandedRows[challenge.id]
+            const hasMultiplePlayers = challenge.allPlayers.length > 1
             
-            {isEmpty ? (
-              <div className="py-12 text-center">
-                <div className="text-4xl mb-3 opacity-20">{challenge.icon}</div>
-                <p className="text-gray-500 text-sm">No matches played yet</p>
-                <p className="text-gray-400 text-xs mt-1">Be the first to compete!</p>
-              </div>
-            ) : (
-              <>
-                <div className="space-y-2">
-                  {playersToShow.map((player, position) => (
-                    <div
-                      key={position}
-                      className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                        position === 0 ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50 hover:bg-gray-100'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                          position === 0 ? 'bg-yellow-400 text-white' : 'bg-white text-gray-700 border border-gray-200'
-                        }`}>
-                          {position + 1}
-                        </div>
-                        <div>
-                          <div className="font-medium text-gray-900">
-                            {player.player?.name || player.name}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className={`text-lg font-bold ${position === 0 ? 'text-yellow-700' : 'text-gray-900'}`}>
-                          {challenge.getStatValue(player)}
-                        </div>
-                        <div className="text-xs text-gray-600">{challenge.statLabel}</div>
-                      </div>
+            return (
+              <React.Fragment key={challenge.id}>
+                <TableRow className="cursor-pointer" onClick={() => hasMultiplePlayers && toggleRow(challenge.id)}>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xl">{challenge.icon}</span>
+                      <Tooltip text={challenge.description}>
+                        <span className="font-medium text-gray-900 border-b border-dotted border-gray-400">
+                          {challenge.title}
+                        </span>
+                      </Tooltip>
                     </div>
-                  ))}
-                </div>
+                  </TableCell>
+                  <TableCell>
+                    {isEmpty ? (
+                      <span className="text-sm text-gray-400 italic">
+                        {isPastMonth ? 'Nobody stepped up this month... 🦗' : 'Your name could be here! Be the legend who starts 🚀'}
+                      </span>
+                    ) : (
+                      <span className="text-gray-900 font-medium">{topPlayer.player?.name || topPlayer.name}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {!isEmpty && (
+                      <span className="text-gray-900 font-semibold">{challenge.getStatValue(topPlayer)}</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {!isEmpty && (
+                      <span className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">
+                        {challenge.allPlayers.length}
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {hasMultiplePlayers && (
+                      <button className="text-gray-400 hover:text-gray-600 transition-colors">
+                        <svg 
+                          className={`w-5 h-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} 
+                          fill="none" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    )}
+                  </TableCell>
+                </TableRow>
                 
-                {hasMore && (
-                  <button
-                    onClick={() => toggleCategory(challenge.id)}
-                    className="w-full mt-4 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors border border-gray-200"
-                  >
-                    {isExpanded ? 'Show less' : `Show more (${challenge.allPlayers.length - 3} more)`}
-                  </button>
+                {isExpanded && hasMultiplePlayers && (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <div className="py-3 px-4">
+                        <div className="space-y-2">
+                          {challenge.allPlayers.map((player, idx) => (
+                            <div key={idx} className="flex items-center justify-between py-2 px-4 bg-white rounded-lg border border-gray-200">
+                              <div className="flex items-center gap-3">
+                                <span className={`text-sm font-bold ${idx === 0 ? 'text-yellow-600' : 'text-gray-400'}`}>
+                                  #{idx + 1}
+                                </span>
+                                <span className="text-gray-900">{player.player?.name || player.name}</span>
+                              </div>
+                              <span className="text-gray-700 font-semibold">
+                                {challenge.getStatValue(player)} {challenge.statLabel}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
-              </>
-            )}
-          </div>
-        )
-      })}
-    </div>
+              </React.Fragment>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </TableContainer>
   )
 }

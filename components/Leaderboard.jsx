@@ -6,10 +6,34 @@ import Confetti from './Confetti'
 import { LoadingSpinner } from './SkeletonLoaders'
 import { useData } from '../lib/DataContext'
 import Button from './Button'
-import DialogActions from './DialogActions'
 import StatsCards from './StatsCards'
 import Table, { TableContainer, TableHead, TableBody, TableHeader, TableRow, TableCell } from './Table'
 import { ToastContainer } from './Toast'
+import AddPlayerDialog from './AddPlayerDialog'
+import AddMatchDialog from './AddMatchDialog'
+
+// Tooltip component for awards
+function Tooltip({ children, text }) {
+  const [isVisible, setIsVisible] = useState(false)
+  
+  return (
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="cursor-help"
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg max-w-[640px] w-max">
+          <div className="text-center">{text}</div>
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 
 
@@ -44,14 +68,6 @@ const AWARD_NAMES = {
 export default function Leaderboard() {
   const { players, matches, monthlyAwards, isLoading, hasLoadedOnce, addPlayer: addPlayerToContext, addMatch: addMatchToContext } = useData()
 
-  // Form states
-  const [newPlayerName, setNewPlayerName] = useState('')
-  const [player1Id, setPlayer1Id] = useState('')
-  const [player2Id, setPlayer2Id] = useState('')
-  const [player1Score, setPlayer1Score] = useState(0)
-  const [player2Score, setPlayer2Score] = useState(0)
-  const [errorMsg, setErrorMsg] = useState('')
-
   // Confetti state
   const [showConfetti, setShowConfetti] = useState(false)
   const [confettiPosition, setConfettiPosition] = useState({ x: 0, y: 0 })
@@ -68,100 +84,9 @@ export default function Leaderboard() {
     playerAwards[award.player_id].push(award)
   })
 
-  // Dialog state for adding players
+  // Dialog state for adding players and matches
   const [showAddPlayerDialog, setShowAddPlayerDialog] = useState(false)
-  const [dialogAnimation, setDialogAnimation] = useState(false)
-
-  // Dialog state for adding matches
   const [showAddMatchDialog, setShowAddMatchDialog] = useState(false)
-  const [matchDialogAnimation, setMatchDialogAnimation] = useState(false)
-  const [isSubmittingMatch, setIsSubmittingMatch] = useState(false)
-  
-  // Dialog state for scoring matches
-  const [showScoreDialog, setShowScoreDialog] = useState(false)
-  const [scoreDialogAnimation, setScoreDialogAnimation] = useState(false)
-  
-  // Dialog state for André prank
-  const [showAndrePrankDialog, setShowAndrePrankDialog] = useState(false)
-  const [andrePrankAnimation, setAndrePrankAnimation] = useState(false)
-
-  // Function to close player dialog with animation
-  const closePlayerDialog = () => {
-    setDialogAnimation(false)
-    setTimeout(() => setShowAddPlayerDialog(false), 200)
-  }
-
-  // Function to close match dialog with animation
-  const closeMatchDialog = () => {
-    setMatchDialogAnimation(false)
-    setTimeout(() => setShowAddMatchDialog(false), 200)
-    // Reset form state when closing
-    setPlayer1Id('')
-    setPlayer2Id('')
-    setPlayer1Score(0)
-    setPlayer2Score(0)
-    setErrorMsg('')
-  }
-
-  // Handle ESC key to close dialogs
-  useEffect(() => {
-    const handleEscKey = (event) => {
-      if (event.key === 'Escape') {
-        if (showAddPlayerDialog) {
-          closePlayerDialog()
-        } else if (showAddMatchDialog) {
-          closeMatchDialog()
-        }
-      }
-    }
-
-    if (showAddPlayerDialog || showAddMatchDialog) {
-      document.addEventListener('keydown', handleEscKey)
-      // Trigger animation after a brief delay
-      if (showAddPlayerDialog) {
-        setTimeout(() => setDialogAnimation(true), 10)
-      }
-      if (showAddMatchDialog) {
-        setTimeout(() => setMatchDialogAnimation(true), 10)
-      }
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscKey)
-    }
-  }, [showAddPlayerDialog, showAddMatchDialog])
-
-
-
-  // Add a new player
-  async function handleAddPlayer(e) {
-    e.preventDefault()
-    if (!newPlayerName.trim()) {
-      setErrorMsg('Player name cannot be empty')
-      return
-    }
-    
-    // Check if player name already exists
-    const existingPlayer = players.find(p => 
-      p.name.toLowerCase() === newPlayerName.trim().toLowerCase()
-    )
-    if (existingPlayer) {
-      setErrorMsg(`Player name "${newPlayerName.trim()}" is already taken`)
-      return
-    }
-    
-    setErrorMsg('')
-    try {
-      const addedPlayer = await addPlayerToContext({ name: newPlayerName.trim() })
-      setNewPlayerName('')
-      
-      // Show success toast
-      addToast(`Player "${addedPlayer.name}" added successfully!`, 'success')
-    } catch (err) {
-      setErrorMsg(err.message)
-      addToast(`Failed to add player: ${err.message}`, 'error')
-    }
-  }
 
   // Confetti functions
   function triggerConfetti(x, y) {
@@ -284,7 +209,7 @@ export default function Leaderboard() {
   }
 
   return (
-    <div className="pt-8 pb-6 px-6">
+    <div className="pt-12 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-left">
           <h1 className="mb-3 text-[#171717]">Total Ranking</h1>
@@ -374,13 +299,14 @@ export default function Leaderboard() {
                             {awards.length > 0 ? (
                               <div className="flex flex-wrap gap-1">
                                 {awards.map((award, idx) => (
-                                  <span
+                                  <Tooltip 
                                     key={idx}
-                                    className="inline-flex items-center text-lg"
-                                    title={AWARD_NAMES[award.category] || award.category}
+                                    text={AWARD_NAMES[award.category] || award.category}
                                   >
-                                    {AWARD_ICONS[award.category] || '🏆'}
-                                  </span>
+                                    <span className="inline-flex items-center text-lg">
+                                      {AWARD_ICONS[award.category] || '🏆'}
+                                    </span>
+                                  </Tooltip>
                                 ))}
                               </div>
                             ) : (

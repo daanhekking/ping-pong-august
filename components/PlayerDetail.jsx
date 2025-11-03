@@ -1,11 +1,34 @@
 'use client'
 
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import { useData } from '../lib/DataContext'
 import { LoadingSpinner } from './SkeletonLoaders'
 import Chip from './Chip'
 import Table, { TableContainer, TableHead, TableBody, TableHeader, TableRow, TableCell } from './Table'
+
+// Tooltip component for awards
+function Tooltip({ children, text }) {
+  const [isVisible, setIsVisible] = useState(false)
+  
+  return (
+    <div className="relative inline-block">
+      <div
+        onMouseEnter={() => setIsVisible(true)}
+        onMouseLeave={() => setIsVisible(false)}
+        className="cursor-help"
+      >
+        {children}
+      </div>
+      {isVisible && (
+        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 px-4 py-2 bg-gray-900 text-white text-sm rounded-lg shadow-lg max-w-[640px] w-max">
+          <div className="text-center">{text}</div>
+          <div className="absolute left-1/2 -translate-x-1/2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 // Award icon and name mapping
 const AWARD_ICONS = {
@@ -99,7 +122,7 @@ export default function PlayerDetail({ playerId }) {
   }
 
   return (
-    <div className="pt-8 pb-6 px-6">
+    <div className="pt-12 pb-6 px-6">
       <div className="max-w-6xl mx-auto space-y-8">
         {/* Back Button */}
         <button
