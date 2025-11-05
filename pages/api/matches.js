@@ -40,6 +40,40 @@ export default async function handler(req, res) {
     const playedAtValue = played_at ?? new Date().toISOString()
 
     try {
+      // Calculate ELO changes if not provided
+      let finalPlayer1EloChange = player1_elo_change;
+      let finalPlayer2EloChange = player2_elo_change;
+      
+      if (finalPlayer1EloChange === undefined || finalPlayer2EloChange === undefined) {
+        // Fetch current player ELO ratings
+        const [{ data: player1Data, error: p1Error }, { data: player2Data, error: p2Error }] = await Promise.all([
+          supabase.from('players').select('elo_rating').eq('id', player1_id).single(),
+          supabase.from('players').select('elo_rating').eq('id', player2_id).single()
+        ]);
+        
+        if (p1Error || p2Error) {
+          return res.status(500).json({ error: 'Failed to fetch player data for ELO calculation' });
+        }
+        
+        const player1Elo = player1Data?.elo_rating ?? 1000;
+        const player2Elo = player2Data?.elo_rating ?? 1000;
+        
+        // Calculate expected scores
+        const expectedScorePlayer1 = 1 / (1 + Math.pow(10, (player2Elo - player1Elo) / 400));
+        const expectedScorePlayer2 = 1 / (1 + Math.pow(10, (player1Elo - player2Elo) / 400));
+        
+        // Actual scores (1 for win, 0 for loss)
+        const actualScorePlayer1 = winner_id === player1_id ? 1 : 0;
+        const actualScorePlayer2 = winner_id === player2_id ? 1 : 0;
+        
+        // K-factor (32 is standard)
+        const K = 32;
+        
+        // Calculate ELO changes
+        finalPlayer1EloChange = Math.round(K * (actualScorePlayer1 - expectedScorePlayer1));
+        finalPlayer2EloChange = Math.round(K * (actualScorePlayer2 - expectedScorePlayer2));
+      }
+
       // Insert the match
       const { data, error } = await supabase
         .from('matches')
@@ -49,8 +83,8 @@ export default async function handler(req, res) {
           player1_score,
           player2_score,
           winner_id,
-          player1_elo_change,
-          player2_elo_change,
+          player1_elo_change: finalPlayer1EloChange,
+          player2_elo_change: finalPlayer2EloChange,
           played_at: playedAtValue
         }])
         .select('*');
@@ -75,13 +109,13 @@ export default async function handler(req, res) {
 
         const [{ error: up1Err }, { error: up2Err }] = await Promise.all([
           supabase.from('players').update({
-            elo_rating: (player1?.elo_rating ?? 0) + player1_elo_change,
+            elo_rating: (player1?.elo_rating ?? 0) + finalPlayer1EloChange,
             matches_played: (player1?.matches_played ?? 0) + 1,
             matches_won: (player1?.matches_won ?? 0) + player1Won,
             matches_lost: (player1?.matches_lost ?? 0) + (1 - player1Won),
           }).eq('id', player1_id),
           supabase.from('players').update({
-            elo_rating: (player2?.elo_rating ?? 0) + player2_elo_change,
+            elo_rating: (player2?.elo_rating ?? 0) + finalPlayer2EloChange,
             matches_played: (player2?.matches_played ?? 0) + 1,
             matches_won: (player2?.matches_won ?? 0) + player2Won,
             matches_lost: (player2?.matches_lost ?? 0) + (1 - player2Won),
